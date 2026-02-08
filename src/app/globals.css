@@ -3,25 +3,283 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
+  --background: #FAFAFA;
   --foreground: #171717;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Performance optimizations */
+img,
+video {
+  content-visibility: auto;
+}
+
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* GPU acceleration for smooth animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FAFAFA;
+}
+::-webkit-scrollbar-thumb {
+  background: #5a8f0c;
+  border-radius: 3px;
+}
+
+/* GSAP SplitText helper */
+.split-line {
+  overflow: hidden;
+  display: block;
+}
+
+/* Fluid hero overlay - darker for gold text contrast */
+.hero-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(6, 78, 59, 0.5) 40%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+}
+
+/* Gold luxury button styling */
+.gold-button {
+  background: linear-gradient(
+    135deg,
+    #D4AF37 0%,
+    #F4E4C1 50%,
+    #D4AF37 100%
+  );
+  background-size: 200% 200%;
+  color: #1a1a1a;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border: 2px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3),
+              0 0 30px rgba(212, 175, 55, 0.2);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.gold-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s;
+}
+
+.gold-button:hover {
+  background-position: 100% 100%;
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5),
+              0 0 40px rgba(212, 175, 55, 0.3);
+  transform: translateY(-2px);
+}
+
+.gold-button:hover::before {
+  left: 100%;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-space-grotesk);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  
+  body {
+    font-family: var(--font-inter), var(--font-plus-jakarta-sans), system-ui, sans-serif;
+  }
+}
+
+/* ============================================
+   MOBILE OPTIMIZATION: Parallax & Responsive
+   ============================================ */
+
+/* Parallax background for desktop only */
+.parallax-bg-desktop {
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Disable parallax on mobile/tablet to prevent jank */
+/* iOS Safari is particularly affected by fixed backgrounds */
+@media (max-width: 768px) {
+  .parallax-bg-desktop {
+    background-attachment: scroll;
+  }
+}
+
+/* Mobile-optimized typography defaults */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  h1 {
+    font-size: 24px;
+  }
+  
+  h2 {
+    font-size: 20px;
+  }
+  
+  h3 {
+    font-size: 18px;
+  }
+  
+  h4, h5, h6 {
+    font-size: 16px;
+  }
+}
+
+/* Touch-friendly target sizes (minimum 44-48px) */
+@media (max-width: 768px) {
+  button,
+  a,
+  input[type="button"],
+  input[type="submit"],
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Responsive container constraints */
+.responsive-container {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Mobile-safe spacing helper */
+@media (max-width: 768px) {
+  .mobile-px-4 {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  
+  .mobile-py-4 {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   MOBILE OPTIMIZATION: Additional Touch & UX
+   ============================================ */
+
+/* Ensure form inputs are touch-friendly on mobile */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    min-height: 44px;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+  }
+  
+  textarea {
+    min-height: 100px;
+  }
+}
+
+/* Ensure product cards don't overflow on mobile */
+@media (max-width: 768px) {
+  .feature-card,
+  .product-card {
+    width: 100%;
+  }
+}
+
+/* Optimize section padding for mobile */
+@media (max-width: 640px) {
+  section {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* Ensure text doesn't overflow in tight spaces */
+@media (max-width: 640px) {
+  h1, h2, h3, h4, h5, h6 {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
 }
