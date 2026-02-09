@@ -94,22 +94,24 @@ video {
   );
 }
 
-/* Gold luxury button styling */
+/* Metallic green button styling */
 .gold-button {
   background: linear-gradient(
     135deg,
-    #D4AF37 0%,
-    #F4E4C1 50%,
-    #D4AF37 100%
+    #2b6f2b 0%,
+    #5a8f0c 45%,
+    #9fcf3a 55%,
+    #4c7e0c 100%
   );
   background-size: 200% 200%;
-  color: #1a1a1a;
+  color: #ffffff;
   font-weight: 600;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  border: 2px solid rgba(212, 175, 55, 0.3);
-  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3),
-              0 0 30px rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 20px rgba(26, 88, 26, 0.35),
+              inset 0 1px 0 rgba(255, 255, 255, 0.35),
+              inset 0 -8px 16px rgba(0, 0, 0, 0.2);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -119,22 +121,24 @@ video {
   content: '';
   position: absolute;
   top: 0;
-  left: -100%;
-  width: 100%;
+  left: -120%;
+  width: 140%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  transition: left 0.5s;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-12deg);
+  transition: left 0.6s;
 }
 
 .gold-button:hover {
   background-position: 100% 100%;
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5),
-              0 0 40px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 10px 24px rgba(26, 88, 26, 0.45),
+              inset 0 1px 0 rgba(255, 255, 255, 0.4),
+              inset 0 -10px 18px rgba(0, 0, 0, 0.25);
   transform: translateY(-2px);
 }
 
 .gold-button:hover::before {
-  left: 100%;
+  left: 120%;
 }
 
 @layer utilities {

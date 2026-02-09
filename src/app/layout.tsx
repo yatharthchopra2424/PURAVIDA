@@ -96,6 +96,10 @@ export const metadata: Metadata = {
     description:
       "Discover 200+ premium botanical ingredients. ISO certified manufacturer & global exporter.",
   },
+  icons: {
+    icon: "/images/logo-new.png",
+    apple: "/images/logo-new.png",
+  },
   robots: {
     index: true,
     follow: true,
