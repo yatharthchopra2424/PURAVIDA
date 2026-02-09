@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Search, Menu, ShoppingBag } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { MegaMenu } from "./MegaMenu";
 import { navigation } from "@/data/navigation";
 import { useSearchStore } from "@/stores/useSearchStore";
