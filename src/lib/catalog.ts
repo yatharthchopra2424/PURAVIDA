@@ -159,24 +159,33 @@ export const fetchProductBySlug = async (slug: string): Promise<Product | null> 
 
 export const searchProducts = async (query: string, limit = 24): Promise<Product[]> => {
   const supabase = getSupabaseServerClient();
-  const [{ data: categoryRows, error: categoryError }, { data: productRows, error: productError }] =
-    await Promise.all([
-      supabase.from("product_categories").select("*"),
-      supabase
-        .from("products")
-        .select("*")
-        .textSearch("search_vector", query, {
-          type: "plain",
-          config: "english",
-        })
-        .limit(limit),
-    ]);
+  
+  if (!query || query.trim().length < 1) {
+    return [];
+  }
+
+  const searchQuery = `%${query.toLowerCase()}%`;
+  
+  // Get categories once
+  const { data: categoryRows, error: categoryError } = await supabase
+    .from("product_categories")
+    .select("id, name, slug");
 
   if (categoryError) {
+    console.error("Category fetch error:", categoryError);
     throw new Error(categoryError.message);
   }
 
+  // Perform optimized search with LOWER() for case-insensitive matching
+  const { data: productRows, error: productError } = await supabase
+    .from("products")
+    .select("id, name, slug, category_id, botanical_name, active_ingredient, active_compound, concentration, applications, description, image_path, quality_badges, is_halal, popularity")
+    .or(`name.ilike.${searchQuery},botanical_name.ilike.${searchQuery},active_ingredient.ilike.${searchQuery},active_compound.ilike.${searchQuery}`, { foreignTable: undefined })
+    .order("popularity", { ascending: false })
+    .limit(limit);
+
   if (productError) {
+    console.error("Product search error:", productError);
     throw new Error(productError.message);
   }
 

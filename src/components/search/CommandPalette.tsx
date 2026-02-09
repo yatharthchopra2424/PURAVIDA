@@ -12,7 +12,7 @@ import { Product } from "@/types";
 
 export function CommandPalette() {
   const router = useRouter();
-  const { isOpen, query, results, open, close, setQuery } =
+  const { isOpen, query, results, isLoading, open, close, setQuery } =
     useSearchStore();
 
   // Cmd+K / Ctrl+K shortcut
@@ -72,6 +72,11 @@ export function CommandPalette() {
                   className="flex h-14 w-full border-0 bg-transparent px-3 text-sm outline-none placeholder:text-gray-400"
                   autoFocus
                 />
+                {isLoading && (
+                  <div className="flex-shrink-0 mr-2">
+                    <div className="animate-spin h-4 w-4 text-emerald">⟳</div>
+                  </div>
+                )}
                 <button
                   onClick={close}
                   className="flex-shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
@@ -82,7 +87,21 @@ export function CommandPalette() {
 
               {/* Results */}
               <Command.List className="max-h-[60vh] overflow-y-auto p-3">
-                {query.length < 2 && (
+                {isLoading && query.length >= 1 && (
+                  <Command.Empty className="px-5 py-12 text-center">
+                    <div className="inline-block animate-spin mb-4">
+                      <div className="text-3xl">⟳</div>
+                    </div>
+                    <p className="text-sm text-gray-600 font-medium mt-4">
+                      Searching for "{query}"...
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Finding all matching products
+                    </p>
+                  </Command.Empty>
+                )}
+
+                {!isLoading && query.length < 1 && (
                   <Command.Empty className="px-5 py-8 text-center">
                     <div className="text-3xl mb-3">🔍</div>
                     <p className="text-sm text-gray-500 mb-6">
@@ -148,18 +167,26 @@ export function CommandPalette() {
                   </Command.Empty>
                 )}
 
-                {query.length >= 2 && results.length === 0 && (
+                {!isLoading && query.length >= 1 && results.length === 0 && (
                   <Command.Empty className="px-5 py-12 text-center">
                     <div className="text-3xl mb-3">😔</div>
                     <p className="text-sm text-gray-700 font-medium">
-                      No results for &ldquo;{query}&rdquo;
+                      No results found for &ldquo;{query}&rdquo;
                     </p>
                     <p className="mt-2 text-xs text-gray-500">
-                      Try searching by botanical name, active ingredient, or application
+                      Try searching by: product name • botanical name • active ingredient
                     </p>
                     <div className="mt-6 pt-4 border-t border-gray-100">
                       <p className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">
-                        Popular Alternatives
+                        What you can search:
+                      </p>
+                      <div className="text-xs text-gray-600 space-y-1 mb-4">
+                        <p>• Curcumin 95% (product name)</p>
+                        <p>• Curcuma longa (botanical name)</p>
+                        <p>• Piperine (active ingredient)</p>
+                      </div>
+                      <p className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+                        Try these instead:
                       </p>
                       <div className="flex flex-wrap justify-center gap-2">
                         {["Ashwagandha", "Curcumin", "Essential Oil", "Turmeric"].map(

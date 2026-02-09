@@ -32,7 +32,7 @@ export function TopBar() {
             {COMPANY.address}
           </span>
           <span className="hidden text-emerald-300 sm:inline">|</span>
-          <span className="hidden sm:inline">GST: {COMPANY.gst}</span>
+          <span className="hidden sm:inline">GST No.- {COMPANY.gst}</span>
         </div>
         <div className="flex items-center gap-4">
           <a

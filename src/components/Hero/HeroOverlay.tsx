@@ -42,40 +42,20 @@ export const HeroOverlay = () => {
             <div className="max-w-6xl pointer-events-auto">
                 <h1 
                     ref={titleRef} 
-                    className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight leading-[1.2] mb-6 text-white hero-title"
+                    className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-semibold tracking-tight leading-[1.15] mb-6 text-white"
                     style={{ WebkitFontSmoothing: 'antialiased', textRendering: 'optimizeLegibility', fontFamily: 'var(--font-space-grotesk)' }}
                 >
                     CURED BY NATURE. PERFECTED BY SCIENCE.
                 </h1>
 
-                <style jsx>{`
-                    .hero-title {
-                        color: #ffffff;
-                        text-shadow:
-                            0 0 5px rgba(242, 209, 109, 0.8),
-                            0 0 10px rgba(242, 209, 109, 0.5),
-                            0 0 15px rgba(242, 209, 109, 0.3);
-                        font-weight: 400;
-                    }
-                    
-                    .hero-text {
-                        color: #e0e0e0;
-                        text-shadow:
-                            0 0 5px rgba(242, 209, 109, 0.8),
-                            0 0 10px rgba(242, 209, 109, 0.5),
-                            0 0 15px rgba(242, 209, 109, 0.3);
-                        font-weight: 400;
-                    }
-                `}</style>
-
-                <p ref={subtitleRef} className="text-base md:text-lg lg:text-xl max-w-2xl mx-auto leading-relaxed mb-8 hero-text" style={{ letterSpacing: '0.02em' }}>
+                <p ref={subtitleRef} className="text-base md:text-lg lg:text-xl max-w-2xl mx-auto leading-relaxed mb-8 text-white/90" style={{ letterSpacing: '0.02em' }}>
                     Pure, standardized extracts that capture the healing power of plants.
                 </p>
 
                 <div ref={ctaRef} className="flex flex-wrap items-center justify-center gap-4">
                     <Link
-                        href="/products/all"
-                        className="gold-button group relative px-8 py-4 font-bold rounded-lg overflow-hidden transition-all active:scale-95 shadow-lg text-base"
+                        href="/products"
+                        className="gold-button group relative px-8 py-4 text-base font-semibold rounded-lg overflow-hidden transition-all active:scale-95"
                     >
                         <span className="relative z-10 flex items-center gap-2 tracking-widest">
                             Discover Our Extracts
