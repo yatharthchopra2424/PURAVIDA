@@ -93,7 +93,7 @@ export function CommandPalette() {
                       <div className="text-3xl">⟳</div>
                     </div>
                     <p className="text-sm text-gray-600 font-medium mt-4">
-                      Searching for "{query}"...
+                      Searching for &quot;{query}&quot;...
                     </p>
                     <p className="text-xs text-gray-400 mt-2">
                       Finding all matching products
