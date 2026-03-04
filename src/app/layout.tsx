@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Space_Grotesk, Inter, Plus_Jakarta_Sans, Open_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import dynamic from "next/dynamic";
+import { headers } from "next/headers";
 import "./globals.css";
 
 import { TopBar } from "@/components/layout/TopBar";
@@ -31,6 +32,15 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-plus-jakarta-sans",
+  display: "swap",
+  preload: true,
+});
+
+// Navbar font - Open Sans
+const openSans = Open_Sans({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-open-sans",
   display: "swap",
   preload: true,
 });
@@ -69,15 +79,13 @@ export const metadata: Metadata = {
     template: "%s | PuraVida Natural",
   },
   description:
-    "Leading manufacturer and exporter of premium herbal extracts, essential oils, oleoresins, fruit juice powders, phytochemicals, and nutraceutical ingredients. ISO 9001, GMP, FSSAI certified.",
+    "Leading manufacturer and exporter of premium herbal extracts, essential oils, oleoresins, and nutraceutical ingredients. ISO 9001, GMP, FSSAI certified.",
   keywords: [
     "herbal extracts",
     "essential oils",
     "oleoresins",
     "botanical ingredients",
     "nutraceuticals",
-    "phytochemicals",
-    "fruit juice powders",
     "PuraVida Natural",
     "bulk botanical supplier",
   ],
@@ -106,11 +114,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-invoke-path") ?? "";
+  const isAdminRoute = pathname.startsWith("/x-admin");
+
   return (
     <html lang="en">
       <head>
@@ -118,19 +130,24 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
       </head>
       <body
-        className={`${spaceGrotesk.variable} ${inter.variable} ${plusJakartaSans.variable} ${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-surface text-gray-900`}
+        className={`${spaceGrotesk.variable} ${inter.variable} ${plusJakartaSans.variable} ${openSans.variable} ${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-surface text-gray-900`}
       >
-        <SmoothScrollProvider>
-          <div className="fixed top-0 left-0 right-0 z-50">
-            <TopBar />
-            <Header />
-          </div>
-          <main className="min-h-screen">{children}</main>
-          <Footer />
-          {/* Client-side overlays */}
-          <MobileNav />
-          <CommandPalette />
-        </SmoothScrollProvider>
+        {isAdminRoute ? (
+          // Admin routes — no public chrome
+          <>{children}</>
+        ) : (
+          <SmoothScrollProvider>
+            <div className="fixed top-0 left-0 right-0 z-50">
+              <TopBar />
+              <Header />
+            </div>
+            <main className="min-h-screen">{children}</main>
+            <Footer />
+            {/* Client-side overlays */}
+            <MobileNav />
+            <CommandPalette />
+          </SmoothScrollProvider>
+        )}
       </body>
     </html>
   );

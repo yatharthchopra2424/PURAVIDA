@@ -13,10 +13,21 @@ export const useCategories = () => {
 
     const load = async () => {
       try {
-        const response = await fetch("/api/catalog/categories");
+        const response = await fetch("/api/catalog/categories", {
+          cache: "no-store",
+        });
+
         if (!response.ok) {
-          throw new Error("Failed to load categories");
+          let message = "Failed to load categories";
+          try {
+            const payload = (await response.json()) as { error?: string };
+            if (payload.error) {
+              message = payload.error;
+            }
+          } catch {}
+          throw new Error(message);
         }
+
         const data = (await response.json()) as Category[];
         if (isActive) {
           setCategories(data);

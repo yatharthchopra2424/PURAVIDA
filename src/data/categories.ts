@@ -3,7 +3,7 @@ import { Category } from "@/types";
 export const categories: Category[] = [
   {
     id: "herbal-extracts",
-    name: "Standardized Herbal Extracts",
+    name: "Herbal Extracts",
     slug: "herbal-extracts",
     label: "Premium Extracts",
     description:
@@ -16,8 +16,8 @@ export const categories: Category[] = [
       "Fruit Extracts",
       "Flower Extracts",
     ],
-    exampleProducts: ["Curcumin 95%", "Ashwagandha Root", "Green Tea Extract"],
-    productCount: 45,
+    exampleProducts: ["Curcumin 95%", "Piperine 95%", "Ashwagandha Root"],
+    productCount: 67,
   },
   {
     id: "essential-oils",
@@ -58,56 +58,6 @@ export const categories: Category[] = [
     productCount: 18,
   },
   {
-    id: "fruit-juice-powders",
-    name: "Fruit Juice Powders",
-    slug: "fruit-juice-powders",
-    label: "Natural Concentrates",
-    description:
-      "Spray-dried fruit juice powders retaining the natural color, flavor, and nutritional profile of fresh fruits. Ideal for food & beverage applications.",
-    image: "/images/Product%20Card%20Backgrounds.png",
-    subcategories: [
-      "Tropical Fruit Powders",
-      "Berry Powders",
-      "Citrus Powders",
-    ],
-    exampleProducts: ["Amla Powder", "Pomegranate Powder", "Mango Powder"],
-    productCount: 15,
-  },
-  {
-    id: "phytochemicals",
-    name: "Phytochemicals",
-    slug: "phytochemicals",
-    label: "Research Grade",
-    description:
-      "High-purity phytochemical isolates for pharmaceutical, nutraceutical, and research applications. HPLC-verified for potency and purity.",
-    image: "/images/Product%20Card%20Backgrounds.png",
-    subcategories: [
-      "Flavonoids",
-      "Alkaloids",
-      "Polyphenols",
-      "Terpenoids",
-      "Glycosides",
-    ],
-    exampleProducts: ["Curcuminoids", "Piperine 95%", "Quercetin"],
-    productCount: 22,
-  },
-  {
-    id: "amino-acids",
-    name: "Amino Acids",
-    slug: "amino-acids",
-    label: "Essential Nutrients",
-    description:
-      "Pharmaceutical and food-grade amino acids manufactured to the highest purity standards. Available in both L-form and DL-form configurations.",
-    image: "/images/Product%20Card%20Backgrounds.png",
-    subcategories: [
-      "Essential Amino Acids",
-      "Non-Essential Amino Acids",
-      "Branched-Chain Amino Acids",
-    ],
-    exampleProducts: ["L-Glutamine", "L-Arginine", "L-Lysine"],
-    productCount: 12,
-  },
-  {
     id: "nutraceuticals",
     name: "Nutraceuticals",
     slug: "nutraceuticals",
@@ -122,12 +72,8 @@ export const categories: Category[] = [
       "Plant Proteins",
       "Dietary Fibers",
     ],
-    exampleProducts: [
-      "Omega-3 Fish Oil",
-      "Collagen Peptides",
-      "Glucosamine",
-    ],
-    productCount: 25,
+    exampleProducts: ["L-Glutamine", "Omega-3 Fish Oil", "Collagen Peptides"],
+    productCount: 37,
   },
 ];
 

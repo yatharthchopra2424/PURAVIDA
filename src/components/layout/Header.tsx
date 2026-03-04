@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -16,6 +16,7 @@ export function Header() {
   const pathname = usePathname();
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const megaMenuCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openSearch = useSearchStore((s) => s.open);
   const toggleMobileNav = useUIStore((s) => s.toggleMobileNav);
   const cartItems = useCartStore((s) => s.items);
@@ -43,6 +44,34 @@ export function Header() {
   const useLightStyle = shouldUseLightNav || (isHomePage && isScrolled);
   // Use green metallic style on home page when not scrolled
   const useGreenStyle = isHomePage && !isScrolled;
+  const useScrolledHomeWhiteLogo = isHomePage && isScrolled;
+
+  const clearMegaMenuTimer = useCallback(() => {
+    if (megaMenuCloseTimer.current) {
+      clearTimeout(megaMenuCloseTimer.current);
+      megaMenuCloseTimer.current = null;
+    }
+  }, []);
+
+  const openMegaMenu = useCallback(() => {
+    clearMegaMenuTimer();
+    setMegaMenuOpen(true);
+  }, [clearMegaMenuTimer]);
+
+  const closeMegaMenu = useCallback(() => {
+    clearMegaMenuTimer();
+    setMegaMenuOpen(false);
+  }, [clearMegaMenuTimer]);
+
+  const scheduleMegaMenuClose = useCallback(() => {
+    clearMegaMenuTimer();
+    megaMenuCloseTimer.current = setTimeout(() => {
+      setMegaMenuOpen(false);
+      megaMenuCloseTimer.current = null;
+    }, 140);
+  }, [clearMegaMenuTimer]);
+
+  useEffect(() => () => clearMegaMenuTimer(), [clearMegaMenuTimer]);
 
   return (
     <header className={cn(
@@ -50,59 +79,52 @@ export function Header() {
       useGreenStyle
         ? "bg-gradient-to-r from-[#2b6f2b] via-[#5a8f0c] to-[#4c7e0c] border-b border-white/10 shadow-lg"
         : useLightStyle
-        ? "bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm"
-        : "bg-white/20 backdrop-blur-lg border-b border-white/20"
+        ? "bg-white border-b border-gray-200 shadow-sm"
+        : "bg-[rgba(6,44,29,0.72)] border-b border-white/10"
     )}>
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+      <div className="w-full flex items-center justify-between gap-4 px-6 sm:px-10 lg:px-14 py-[15px] lg:py-1">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-          <div className="relative h-10 w-10 overflow-hidden rounded-xl bg-white">
+        <Link
+          href="/"
+          className={cn(
+            "flex-shrink-0",
+            useScrolledHomeWhiteLogo ? "my-0 ml-2" : "-my-4"
+          )}
+        >
+          <div
+            className={cn(
+              "relative",
+              useScrolledHomeWhiteLogo ? "h-[76px] w-56" : "h-[115px] w-80"
+            )}
+          >
             <Image
-              src="/images/logo-new.png"
-              alt="Pura Vida"
+              src={useScrolledHomeWhiteLogo ? "/images/logo-new.png" : "/images/logo-bg-rm.png"}
+              alt="Pura Vida Natural"
               fill
-              sizes="40px"
-              className="object-contain"
+              sizes="192px"
+              className="object-contain object-left"
               priority
             />
           </div>
-          <div className="hidden sm:block">
-            <span
-              className={cn(
-                "text-lg font-extrabold transition-colors whitespace-nowrap",
-                useLightStyle ? "tracking-[0.04em]" : "tracking-tighter"
-              )}
-              style={{
-                color: useLightStyle ? "#5a8f0c" : "#ffffff",
-                textShadow: useLightStyle ? "0 0 6px rgba(255, 255, 255, 0.95)" : "0 0 8px rgba(0, 0, 0, 0.3)"
-              }}
-            >
-              PURAVIDA
-            </span>
-            <span
-              className={cn(
-                "ml-1.5 text-lg font-extrabold uppercase transition-colors whitespace-nowrap",
-                useLightStyle ? "tracking-[0.04em]" : "tracking-tighter"
-              )}
-              style={{
-                color: useLightStyle ? "#5a8f0c" : "#ffffff",
-                textShadow: useLightStyle ? "0 0 6px rgba(255, 255, 255, 0.95)" : "0 0 8px rgba(0, 0, 0, 0.3)"
-              }}
-            >
-              NATURAL
-            </span>
-          </div>
         </Link>
 
+        {/* Nav + Actions grouped on the far right */}
+        <div className="flex items-center gap-4">
         {/* Desktop Navigation */}
-        <nav className="relative hidden items-center gap-0.5 lg:flex flex-shrink-0">
+        <nav className="relative hidden items-center gap-1 lg:flex flex-shrink-0" style={{ fontFamily: "var(--font-open-sans, 'Open Sans', sans-serif)", transform: "translateZ(0)", isolation: "isolate", WebkitFontSmoothing: "subpixel-antialiased" }}>
           {navigation.map((item) => (
-            <div key={item.label} className="relative">
+            <div
+              key={item.label}
+              className="relative"
+              onMouseEnter={item.children ? openMegaMenu : undefined}
+              onMouseLeave={item.children ? scheduleMegaMenuClose : undefined}
+            >
               {item.children ? (
                 <button
-                  onMouseEnter={() => setMegaMenuOpen(true)}
+                  onMouseEnter={openMegaMenu}
+                  onClick={() => (megaMenuOpen ? closeMegaMenu() : openMegaMenu())}
                   className={cn(
-                    "rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors whitespace-nowrap",
+                    "rounded-lg px-3 py-2 text-base font-normal not-italic normal-case leading-[21px] tracking-normal transition-colors whitespace-nowrap",
                     megaMenuOpen
                       ? useLightStyle ? "bg-amber-50 text-amber-600" : "bg-white/20 text-white"
                       : useLightStyle 
@@ -132,7 +154,7 @@ export function Header() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors whitespace-nowrap",
+                    "rounded-lg px-3 py-2 text-base font-normal not-italic normal-case leading-[21px] tracking-normal transition-colors whitespace-nowrap",
                     useLightStyle
                       ? "text-gray-700 hover:bg-gray-100 hover:text-amber-600"
                       : "text-white hover:bg-white/20 hover:text-white"
@@ -147,7 +169,9 @@ export function Header() {
           {/* Mega Menu Dropdown */}
           <MegaMenu
             isOpen={megaMenuOpen}
-            onClose={() => setMegaMenuOpen(false)}
+            onClose={closeMegaMenu}
+            onMouseEnter={openMegaMenu}
+            onMouseLeave={scheduleMegaMenuClose}
           />
         </nav>
 
@@ -157,7 +181,7 @@ export function Header() {
           <button
             onClick={openSearch}
             className={cn(
-              "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[13px] transition-colors whitespace-nowrap",
+              "flex h-11 items-center gap-1.5 rounded-lg border px-4 text-base font-medium not-italic normal-case leading-[21px] tracking-normal transition-colors whitespace-nowrap",
               useLightStyle
                 ? "border-gray-300 text-gray-600 hover:border-amber-500 hover:text-amber-600 hover:bg-amber-50"
                 : "border-white/30 text-white hover:border-white/50 hover:text-white hover:bg-white/10"
@@ -196,7 +220,7 @@ export function Header() {
           <div className="hidden lg:flex">
             <Link 
               href="/contact" 
-              className="inline-flex items-center justify-center px-4 py-1.5 text-[13px] font-semibold rounded-lg text-white whitespace-nowrap transition-all bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 shadow-md hover:shadow-lg"
+              className="inline-flex h-11 items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-amber-600 px-4 text-base font-medium not-italic normal-case leading-[21px] tracking-normal text-white whitespace-nowrap transition-all hover:from-orange-600 hover:to-amber-700 shadow-md hover:shadow-lg"
             >
               Send Inquiry
             </Link>
@@ -215,6 +239,7 @@ export function Header() {
             <Menu className="h-5 w-5" />
           </button>
         </div>
+        </div>{/* end right group */}
       </div>
     </header>
   );
