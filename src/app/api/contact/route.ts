@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createSupabaseServiceClient } from "@/lib/supabase-service";
 
 export async function POST(req: Request) {
   try {
@@ -10,6 +11,22 @@ export async function POST(req: Request) {
         { error: "Name and email are required." },
         { status: 400 }
       );
+    }
+
+    // ── Persist to Supabase contacts table ──────────────────────────
+    try {
+      const supabase = createSupabaseServiceClient();
+      await supabase.from("contacts").insert({
+        name,
+        email,
+        product: product || null,
+        quantity: quantity || null,
+        description: description || null,
+        cart_items: cartItems && cartItems.length > 0 ? cartItems : null,
+        is_read: false,
+      });
+    } catch (dbError) {
+      console.error("DB insert failed for contact:", dbError);
     }
 
     // ── Build email body ────────────────────────────────────────────

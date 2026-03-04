@@ -10,7 +10,7 @@ import { useCategories } from "@/hooks/useCategories";
 
 export function MobileNav() {
   const { isMobileNavOpen, closeMobileNav } = useUIStore();
-  const { categories, loading } = useCategories();
+  const { categories, loading, error } = useCategories();
 
   return (
     <AnimatePresence>
@@ -68,7 +68,11 @@ export function MobileNav() {
                             ))}
                             {categories.length === 0 && (
                               <li className="px-3 py-2 text-sm text-gray-400">
-                                {loading ? "Loading categories..." : "No categories available"}
+                                {loading
+                                  ? "Loading categories..."
+                                  : error
+                                    ? `Unable to load categories: ${error}`
+                                    : "No categories available"}
                               </li>
                             )}
                           </ul>

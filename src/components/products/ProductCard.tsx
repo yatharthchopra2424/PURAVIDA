@@ -50,7 +50,7 @@ export function ProductCard({ product, highlight = false }: ProductCardProps) {
           >
             <div
               className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url('${product.image}')` }}
+              style={{ backgroundImage: "url('/images/Product%20Card%20Backgrounds.png')" }}
             />
             <div className="absolute inset-0 bg-emerald/10" />
             <div className="text-center p-4 transition-transform duration-300 group-hover:scale-110">
@@ -86,19 +86,19 @@ export function ProductCard({ product, highlight = false }: ProductCardProps) {
           </Link>
 
           {product.botanicalName && (
-            <p className="mb-1 text-xs italic text-gray-700">
+            <p className="mb-1 text-xs italic text-gray-400">
               {product.botanicalName}
             </p>
           )}
 
           {product.activeIngredient && (
-            <p className="mb-2 text-xs text-black">
+            <p className="mb-2 text-xs text-gray-600">
               Active:{" "}
               <span className="font-semibold text-emerald">
                 {product.activeIngredient}
               </span>
               {product.concentration && (
-                <span className="ml-1 text-gray-600">
+                <span className="ml-1 text-gray-400">
                   ({product.concentration})
                 </span>
               )}
@@ -109,7 +109,7 @@ export function ProductCard({ product, highlight = false }: ProductCardProps) {
             {product.applications.slice(0, 3).map((app) => (
               <span
                 key={app}
-                className="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] text-gray-700"
+                className="rounded-md bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500"
               >
                 {app}
               </span>

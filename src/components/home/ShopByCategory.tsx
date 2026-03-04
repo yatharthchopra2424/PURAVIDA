@@ -12,7 +12,6 @@ import { Category } from "@/types";
 export function ShopByCategory({ categories }: { categories: Category[] }) {
   const [featuredIdx, setFeaturedIdx] = useState(0);
   const featured = categories[featuredIdx];
-  const supporting = categories.filter((_, i) => i !== featuredIdx).slice(0, 4);
 
   // Auto-rotate featured card
   useEffect(() => {
@@ -86,36 +85,52 @@ export function ShopByCategory({ categories }: { categories: Category[] }) {
             </motion.div>
           </AnimatePresence>
 
-          {/* Supporting Cards Grid */}
+          {/* Supporting Cards Grid — always shows all categories */}
           <div className="grid grid-cols-2 gap-4">
-            {supporting.map((cat) => (
-              <Link
-                key={cat.slug}
-                href={`/products/${cat.slug}`}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 transition-all duration-300 hover:border-emerald/20 hover:shadow-lg"
-              >
-                <div
-                  className="absolute inset-0 bg-cover bg-center opacity-15"
-                  style={{ backgroundImage: `url('${cat.image}')` }}
-                />
-                <div className="absolute inset-0 bg-white/60" />
-                <div className="relative z-10">
-                  <Badge variant="category" className="mb-3">
-                    {cat.label}
-                  </Badge>
-                  <h4 className="mb-2 text-sm font-bold text-gray-900 group-hover:text-emerald transition-colors">
-                    {cat.name}
-                  </h4>
-                  <p className="text-xs leading-relaxed text-gray-500 line-clamp-2">
-                    {cat.description}
-                  </p>
-                </div>
-                <div className="relative z-10 mt-4 flex items-center text-xs font-semibold text-orange-500 group-hover:text-orange-600">
-                  Explore
-                  <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-1" />
-                </div>
-              </Link>
-            ))}
+            {categories.map((cat, idx) => {
+              const isActive = idx === featuredIdx;
+              return (
+                <button
+                  key={cat.slug}
+                  onClick={() => setFeaturedIdx(idx)}
+                  className={`
+                    group relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-white p-6 text-left
+                    transition-all duration-300 hover:shadow-lg
+                    ${isActive
+                      ? "border-emerald/50 shadow-md ring-2 ring-emerald/20"
+                      : "border-gray-100 hover:border-emerald/20"
+                    }
+                  `}
+                >
+                  <div
+                    className="absolute inset-0 bg-cover bg-center opacity-15"
+                    style={{ backgroundImage: `url('${cat.image}')` }}
+                  />
+                  <div className="absolute inset-0 bg-white/60" />
+                  {/* Active indicator dot */}
+                  {isActive && (
+                    <span className="absolute right-3 top-3 h-2 w-2 rounded-full bg-emerald" />
+                  )}
+                  <div className="relative z-10">
+                    <Badge variant="category" className="mb-3">
+                      {cat.label}
+                    </Badge>
+                    <h4 className={`mb-2 text-sm font-bold transition-colors ${isActive ? "text-emerald" : "text-gray-900 group-hover:text-emerald"}`}>
+                      {cat.name}
+                    </h4>
+                    <p className="text-xs leading-relaxed text-gray-500 line-clamp-2">
+                      {cat.description}
+                    </p>
+                  </div>
+                  <div className={`relative z-10 mt-4 flex items-center text-xs font-semibold transition-colors ${isActive ? "text-orange-600" : "text-orange-500 group-hover:text-orange-600"}`}>
+                    <Link href={`/products/${cat.slug}`} onClick={(e) => e.stopPropagation()} className="flex items-center">
+                      Explore
+                      <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 

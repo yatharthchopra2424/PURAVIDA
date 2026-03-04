@@ -137,9 +137,9 @@ export function CommandPalette() {
                         <Command.Group>
                           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             {[
-                              { name: "Curcumin 95%", ingredient: "Turmeric Extract", cat: "Phytochemicals" },
+                              { name: "Curcumin 95%", ingredient: "Turmeric Extract", cat: "Herbal Extracts" },
                               { name: "Ashwagandha Root", ingredient: "Ashwagandha Extract", cat: "Herbal Extracts" },
-                              { name: "Piperine 95%", ingredient: "Black Pepper Extract", cat: "Phytochemicals" },
+                              { name: "Piperine 95%", ingredient: "Black Pepper Extract", cat: "Herbal Extracts" },
                               { name: "Clove Leaf Oil", ingredient: "Essential Oil", cat: "Essential Oils" }
                             ].map((item, idx) => (
                               <button

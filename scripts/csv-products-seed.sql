@@ -1,3 +1,34 @@
+begin;
+
+-- Ensure source categories exist for incoming product rows
+insert into public.product_categories (
+  id,
+  name,
+  slug,
+  label,
+  description,
+  image,
+  subcategories,
+  example_products,
+  product_count
+)
+values
+('herbal-extracts', 'Herbal Extracts', 'herbal-extracts', 'Premium Extracts', 'High-potency standardized extracts from premium botanicals, manufactured under strict GMP conditions to ensure consistent active compound levels.', '/images/Product%20Card%20Backgrounds.png', array['Root Extracts', 'Leaf Extracts', 'Bark Extracts', 'Fruit Extracts', 'Flower Extracts'], array['Curcumin 95%', 'Ashwagandha Root', 'Green Tea Extract'], 0),
+('essential-oils', 'Essential Oils', 'essential-oils', 'Therapeutic Grade', 'Pure, therapeutic-grade essential oils sourced from the finest botanicals across India. Steam distilled and cold-pressed for maximum potency.', '/images/Product%20Card%20Backgrounds.png', array['Floral Oils', 'Herbal Oils', 'Spice Oils', 'Wood Oils', 'Citrus Oils'], array['Clove Leaf Oil', 'Eucalyptus Oil', 'Peppermint Oil'], 0),
+('oleoresins', 'Oleoresins', 'oleoresins', 'High Potency', 'Concentrated oleoresins capturing the complete flavor and bioactive profile of spices and herbs through advanced solvent extraction.', '/images/Product%20Card%20Backgrounds.png', array['Spice Oleoresins', 'Herb Oleoresins', 'Capsicum Oleoresins'], array['Turmeric Oleoresin', 'Paprika Oleoresin', 'Black Pepper Oleoresin'], 0),
+('fruit-juice-powders', 'Fruit Juice Powders', 'fruit-juice-powders', 'Natural Concentrates', 'Spray-dried fruit juice powders retaining the natural color, flavor, and nutritional profile of fresh fruits. Ideal for food & beverage applications.', '/images/Product%20Card%20Backgrounds.png', array['Tropical Fruit Powders', 'Berry Powders', 'Citrus Powders'], array['Amla Powder', 'Pomegranate Powder', 'Mango Powder'], 0),
+('phytochemicals', 'Phytochemicals', 'phytochemicals', 'Research Grade', 'High-purity phytochemical isolates for pharmaceutical, nutraceutical, and research applications. HPLC-verified for potency and purity.', '/images/Product%20Card%20Backgrounds.png', array['Flavonoids', 'Alkaloids', 'Polyphenols', 'Terpenoids', 'Glycosides'], array['Curcuminoids', 'Piperine 95%', 'Quercetin'], 0),
+('amino-acids', 'Amino Acids', 'amino-acids', 'Essential Nutrients', 'Pharmaceutical and food-grade amino acids manufactured to the highest purity standards. Available in both L-form and DL-form configurations.', '/images/Product%20Card%20Backgrounds.png', array['Essential Amino Acids', 'Non-Essential Amino Acids', 'Branched-Chain Amino Acids'], array['L-Glutamine', 'L-Arginine', 'L-Lysine'], 0),
+('nutraceuticals', 'Nutraceuticals', 'nutraceuticals', 'Health & Wellness', 'Comprehensive range of nutraceutical ingredients for dietary supplements, functional foods, and wellness products. Backed by clinical research.', '/images/Product%20Card%20Backgrounds.png', array['Vitamins & Minerals', 'Probiotics', 'Omega Fatty Acids', 'Plant Proteins', 'Dietary Fibers'], array['Omega-3 Fish Oil', 'Collagen Peptides', 'Glucosamine'], 0)
+on conflict (id) do update set
+  name = excluded.name,
+  slug = excluded.slug,
+  label = excluded.label,
+  description = excluded.description,
+  image = excluded.image,
+  subcategories = excluded.subcategories,
+  example_products = excluded.example_products;
+
 insert into public.products (
   id,
   name,
@@ -291,3 +322,60 @@ on conflict (slug) do update set
   quality_badges = excluded.quality_badges,
   is_halal = excluded.is_halal,
   popularity = excluded.popularity;
+
+-- Consolidate into final 4-category model
+update public.products
+set category_id = 'herbal-extracts'
+where category_id = 'phytochemicals';
+
+update public.products
+set category_id = 'nutraceuticals'
+where category_id = 'amino-acids';
+
+delete from public.products
+where category_id = 'fruit-juice-powders';
+
+delete from public.product_categories
+where id in ('phytochemicals', 'amino-acids', 'fruit-juice-powders');
+
+update public.product_categories
+set name = 'Herbal Extracts'
+where id = 'herbal-extracts';
+
+update public.product_categories pc
+set product_count = coalesce(src.cnt, 0)
+from (
+  select category_id, count(*)::int as cnt
+  from public.products
+  group by category_id
+) src
+where pc.id = src.category_id;
+
+update public.product_categories pc
+set product_count = 0
+where not exists (
+  select 1
+  from public.products p
+  where p.category_id = pc.id
+);
+
+update public.product_categories pc
+set example_products = coalesce(src.examples, array[]::text[])
+from (
+  select
+    category_id,
+    (array_agg(name order by coalesce(popularity, 0) desc, name asc))[1:3] as examples
+  from public.products
+  group by category_id
+) src
+where pc.id = src.category_id;
+
+update public.product_categories pc
+set example_products = array[]::text[]
+where not exists (
+  select 1
+  from public.products p
+  where p.category_id = pc.id
+);
+
+commit;

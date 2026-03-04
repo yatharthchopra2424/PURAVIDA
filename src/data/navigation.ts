@@ -3,15 +3,13 @@ import { NavItem, HeroSlide, CompanyStat, BusinessProfileItem, FeatureCard } fro
 export const navigation: NavItem[] = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
-  { label: "Our Business", href: "/about#business" },
-  { label: "Advantage", href: "/about#advantage" },
   { label: "Facility", href: "/about#facility" },
   {
     label: "Our Product Range",
     href: "/products",
     children: [
       {
-        label: "Standardized Herbal Extracts",
+        label: "Herbal Extracts",
         href: "/products/herbal-extracts",
         description: "Premium extracts with standardized active compounds",
         image: "/images/Product%20Card%20Backgrounds.png",
@@ -26,24 +24,6 @@ export const navigation: NavItem[] = [
         label: "Oleoresins",
         href: "/products/oleoresins",
         description: "Concentrated high-potency spice extracts",
-        image: "/images/Product%20Card%20Backgrounds.png",
-      },
-      {
-        label: "Fruit Juice Powders",
-        href: "/products/fruit-juice-powders",
-        description: "Natural spray-dried fruit concentrates",
-        image: "/images/Product%20Card%20Backgrounds.png",
-      },
-      {
-        label: "Phytochemicals",
-        href: "/products/phytochemicals",
-        description: "Research-grade bioactive isolates",
-        image: "/images/Product%20Card%20Backgrounds.png",
-      },
-      {
-        label: "Amino Acids",
-        href: "/products/amino-acids",
-        description: "Pharmaceutical-grade essential nutrients",
         image: "/images/Product%20Card%20Backgrounds.png",
       },
       {
