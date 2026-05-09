@@ -1,26 +1,22 @@
 import { NextResponse } from "next/server";
+import { getSupabaseServerClient } from "@/lib/supabase";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabase = getSupabaseServerClient();
+    
+    // A tiny query to ensure the database actually wakes up
+    const { data, error } = await supabase.from("products").select("id").limit(1);
 
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Missing Supabase environment variables");
+    if (error) {
+      throw error;
     }
-
-    const response = await fetch(`${supabaseUrl}/rest/v1/`, {
-      method: "GET",
-      headers: {
-        apikey: supabaseKey,
-        Authorization: `Bearer ${supabaseKey}`,
-      },
-      cache: "no-store", // Ensure the request is never cached
-    });
 
     return NextResponse.json({
       success: true,
-      status: response.status,
+      time: new Date().toISOString(),
     });
   } catch (err) {
     return NextResponse.json(
