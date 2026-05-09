@@ -1,0 +1,13 @@
+name: Keep Supabase Alive
+on:
+  schedule:
+    - cron: '0 */12 * * *'   # every 12 hours
+  workflow_dispatch:         # allows manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Keep Alive Endpoint
+        run: |
+          curl -X GET "https://www.puravidanaturalindia.com/api/keepalive"
