@@ -110,28 +110,57 @@ export const fetchProductsByCategory = async (
   categorySlug: string
 ): Promise<Product[]> => {
   const supabase = getSupabaseServerClient();
-  const [{ data: categoryRows, error: categoryError }, { data: productRows, error: productError }] =
-    await Promise.all([
-      supabase.from("product_categories").select("*").order("name"),
-      supabase
-        .from("products")
-        .select("*")
-        .eq("category_id", categorySlug)
-        .order("name"),
-    ]);
+
+  const { data: categoryRows, error: categoryError } = await supabase
+    .from("product_categories")
+    .select("*")
+    .order("name");
 
   if (categoryError) {
     throw new Error(categoryError.message);
   }
 
+  const categories = (categoryRows as CategoryRow[]).map(mapCategoryRow);
+  const categoryMap = new Map(categories.map((category) => [category.id, category]));
+
+  // products.category_id currently stores the category slug (the seed
+  // sets product_categories.id = slug). Resolve via the category row
+  // rather than assuming that, so this keeps working if ids become
+  // UUIDs later.
+  const category = categories.find((entry) => entry.slug === categorySlug);
+  if (!category) {
+    return [];
+  }
+
+  const { data: productRows, error: productError } = await supabase
+    .from("products")
+    .select("*")
+    .eq("category_id", category.id)
+    .order("name");
+
   if (productError) {
     throw new Error(productError.message);
   }
 
-  const categories = (categoryRows as CategoryRow[]).map(mapCategoryRow);
-  const categoryMap = new Map(categories.map((category) => [category.id, category]));
-
   return (productRows as ProductRow[]).map((row) => mapProductRow(row, categoryMap));
+};
+
+export const fetchCategoryBySlug = async (
+  slug: string
+): Promise<Category | null> => {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("product_categories")
+    .select("*")
+    .eq("slug", slug)
+    .limit(1);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const row = (data as CategoryRow[])[0];
+  return row ? mapCategoryRow(row) : null;
 };
 
 export const fetchProductBySlug = async (slug: string): Promise<Product | null> => {
@@ -236,47 +265,55 @@ const getSearchScore = (
   return score;
 };
 
-export const searchProducts = async (query: string, limit = 60): Promise<Product[]> => {
+const buildCategoryMap = async (): Promise<Map<string, Category>> => {
   const supabase = getSupabaseServerClient();
-  
-  if (!query || query.trim().length < 1) {
-    return [];
+  const { data, error } = await supabase
+    .from("product_categories")
+    .select("*");
+
+  if (error) {
+    throw new Error(error.message);
   }
 
+  const categories = (data as CategoryRow[]).map(mapCategoryRow);
+  return new Map(categories.map((category) => [category.id, category]));
+};
+
+/**
+ * Legacy in-memory search.
+ *
+ * Retained only as a fallback for when the Postgres RPC is missing —
+ * i.e. scripts/search-fulltext.sql has not been run yet. It pulls a
+ * broad candidate set and scores in Node, which is exactly the
+ * behaviour P1-7 replaced, so it should never be the steady state.
+ */
+const searchProductsInMemory = async (
+  query: string,
+  limit: number
+): Promise<Product[]> => {
+  const supabase = getSupabaseServerClient();
+
   const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return [];
+
   const tokens = normalizedQuery
     .split(" ")
     .map((token) => token.trim())
     .filter((token) => token.length > 1);
 
-  if (!normalizedQuery) {
-    return [];
-  }
-  
-  // Get categories once
-  const { data: categoryRows, error: categoryError } = await supabase
-    .from("product_categories")
-    .select("id, name, slug");
+  const categoryMap = await buildCategoryMap();
 
-  if (categoryError) {
-    console.error("Category fetch error:", categoryError);
-    throw new Error(categoryError.message);
-  }
-
-  // Pull a broad candidate set and score in-memory for robust multi-field matching.
-  const { data: productRows, error: productError } = await supabase
+  const { data: productRows, error } = await supabase
     .from("products")
-    .select("id, name, slug, category_id, botanical_name, active_ingredient, active_compound, concentration, applications, description, image_path, quality_badges, is_halal, popularity")
+    .select(
+      "id, name, slug, category_id, botanical_name, active_ingredient, active_compound, concentration, applications, description, image_path, quality_badges, is_halal, popularity"
+    )
     .order("popularity", { ascending: false })
     .limit(2000);
 
-  if (productError) {
-    console.error("Product search error:", productError);
-    throw new Error(productError.message);
+  if (error) {
+    throw new Error(error.message);
   }
-
-  const categories = (categoryRows as CategoryRow[]).map(mapCategoryRow);
-  const categoryMap = new Map(categories.map((category) => [category.id, category]));
 
   return (productRows as ProductRow[])
     .map((row) => {
@@ -291,6 +328,54 @@ export const searchProducts = async (query: string, limit = 60): Promise<Product
     })
     .slice(0, Math.max(1, limit))
     .map((entry) => mapProductRow(entry.row, categoryMap));
+};
+
+/**
+ * Product search, ranked in Postgres.
+ *
+ * Calls the search_products RPC (scripts/search-fulltext.sql), which
+ * combines a GIN-indexed tsvector with trigram similarity so both
+ * stemming and typos are handled, and returns only the rows needed.
+ *
+ * Falls back to the old in-memory path if the RPC is absent, so the
+ * site keeps working before the migration is applied.
+ */
+export const searchProducts = async (
+  query: string,
+  limit = 60
+): Promise<Product[]> => {
+  const trimmed = query?.trim() ?? "";
+  if (!trimmed) return [];
+
+  const safeLimit = Math.min(Math.max(1, limit), 200);
+  const supabase = getSupabaseServerClient();
+
+  const { data, error } = await supabase.rpc("search_products", {
+    search_query: trimmed,
+    result_limit: safeLimit,
+  });
+
+  if (error) {
+    // 42883 = undefined_function, PGRST202 = RPC not found in schema cache.
+    const migrationMissing =
+      error.code === "42883" ||
+      error.code === "PGRST202" ||
+      /search_products/i.test(error.message ?? "");
+
+    if (migrationMissing) {
+      console.warn(
+        "[catalog] search_products RPC not found — falling back to in-memory " +
+          "search. Run scripts/search-fulltext.sql to enable indexed search."
+      );
+      return searchProductsInMemory(trimmed, safeLimit);
+    }
+
+    console.error("[catalog] search_products RPC failed", error);
+    throw new Error(error.message);
+  }
+
+  const categoryMap = await buildCategoryMap();
+  return (data as ProductRow[]).map((row) => mapProductRow(row, categoryMap));
 };
 
 export const fetchProductNames = async (limit = 500) => {

@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────
+# Line endings
+#
+# The working tree was CRLF while the committed blobs were LF, so
+# `git diff` reported EVERY file as entirely rewritten — code review
+# was effectively impossible and any second contributor would have hit
+# phantom conflicts immediately.
+#
+# `text=auto eol=lf` normalises to LF in the repository. Git still
+# checks out whatever your editor and OS prefer; only the stored form
+# is pinned. Nothing about your local workflow changes.
+# ─────────────────────────────────────────────────────────────
+
+* text=auto eol=lf
+
+# ── Explicitly text ─────────────────────────────────────────
+*.ts       text eol=lf
+*.tsx      text eol=lf
+*.js       text eol=lf
+*.mjs      text eol=lf
+*.cjs      text eol=lf
+*.json     text eol=lf
+*.css      text eol=lf
+*.scss     text eol=lf
+*.md       text eol=lf
+*.sql      text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+*.html     text eol=lf
+*.svg      text eol=lf
+*.csv      text eol=lf
+.env*      text eol=lf
+.gitignore text eol=lf
+
+# ── Binary — never normalise, never diff as text ────────────
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.webp     binary
+*.avif     binary
+*.ico      binary
+*.woff     binary
+*.woff2    binary
+*.ttf      binary
+*.otf      binary
+*.eot      binary
+*.pdf      binary
+*.zip      binary
+*.mp4      binary
+*.webm     binary
+
+# ── Generated — collapse in PR diffs ────────────────────────
+package-lock.json  linguist-generated=true -diff

@@ -8,7 +8,7 @@ export async function GET() {
     const supabase = getSupabaseServerClient();
     
     // A tiny query to ensure the database actually wakes up
-    const { data, error } = await supabase.from("products").select("id").limit(1);
+    const { error } = await supabase.from("products").select("id").limit(1);
 
     if (error) {
       throw error;

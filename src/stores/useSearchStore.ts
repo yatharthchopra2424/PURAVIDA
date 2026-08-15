@@ -27,12 +27,14 @@ export const useSearchStore = create<SearchState>((set) => ({
     set({ isOpen: false, query: "", results: [], isLoading: false });
   },
   setQuery: (query) => {
-    set({ query, isLoading: query.length >= 1 });
+    set({ query, isLoading: query.trim().length >= 2 });
 
     if (searchTimeout) clearTimeout(searchTimeout);
     if (activeController) activeController.abort();
 
-    if (query.length < 1) {
+    // Single characters match almost everything and are never a useful
+    // query; waiting for the second keystroke halves the request count.
+    if (query.trim().length < 2) {
       set({ results: [], isLoading: false });
       return;
     }
@@ -43,10 +45,12 @@ export const useSearchStore = create<SearchState>((set) => ({
       activeController = controller;
       try {
         const response = await fetch(
-          `/api/catalog/search?q=${encodeURIComponent(query)}`,
-          { 
+          `/api/catalog/search?q=${encodeURIComponent(query.trim())}`,
+          {
             signal: controller.signal,
-            headers: { "Cache-Control": "no-cache" }
+            // No Cache-Control override here: the route sets
+            // s-maxage + stale-while-revalidate, and sending
+            // "no-cache" from the client defeated that entirely.
           }
         );
         if (!response.ok) throw new Error("Search failed");

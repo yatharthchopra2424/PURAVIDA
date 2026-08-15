@@ -1,4 +1,5 @@
 name: Keep Supabase Alive
+
 on:
   schedule:
     - cron: '0 */12 * * *'   # every 12 hours
@@ -8,6 +9,17 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Call Keep Alive Endpoint
+      - name: Call keep-alive endpoint
+        env:
+          # Override in Settings → Secrets and variables → Actions → Variables
+          # if the domain ever changes, instead of editing this file.
+          KEEPALIVE_URL: ${{ vars.KEEPALIVE_URL || 'https://www.puravidanaturalindia.com/api/keepalive' }}
         run: |
-          curl -X GET "https://www.puravidanaturalindia.com/api/keepalive"
+          # --fail            → non-zero exit on 4xx/5xx, so a broken
+          #                     keepalive reports red instead of green
+          # --retry 3         → tolerate a cold start while the DB wakes
+          # --max-time 30     → don't hang the runner
+          curl --fail --show-error --silent \
+               --retry 3 --retry-delay 10 --retry-all-errors \
+               --max-time 30 \
+               "$KEEPALIVE_URL"

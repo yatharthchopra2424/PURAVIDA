@@ -1,10 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { isAdminEmail } from "@/lib/admin-allowlist";
+
+export { getAdminEmails, isAdminEmail } from "@/lib/admin-allowlist";
 
 /**
- * Verifies that the request has a valid Supabase session.
- * Returns the user if authenticated, or a 401 NextResponse.
+ * Verifies the request carries a valid Supabase session belonging to an
+ * allowlisted admin.
+ *
+ * Returns the user, or a NextResponse to return directly:
+ *   401 — not signed in
+ *   403 — signed in, but not an admin
  *
  * Usage in API route handlers:
  *   const result = await requireAdminUser();
@@ -44,6 +51,13 @@ export async function requireAdminUser(): Promise<
 
   if (error || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isAdminEmail(user.email)) {
+    console.warn(
+      `[admin-auth] Rejected non-admin account: ${user.email ?? user.id}`
+    );
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   return { user };

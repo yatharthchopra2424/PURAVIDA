@@ -41,13 +41,11 @@ const config: Config = {
         foreground: "var(--foreground)",
       },
       fontFamily: {
-        // Modern heading font
+        // Two families, down from six (P1-10). Plus Jakarta Sans,
+        // Open Sans, Geist Sans and Geist Mono were loaded on every
+        // page but never actually applied.
         heading: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
-        // Body text fonts
-        sans: ["var(--font-inter)", "var(--font-plus-jakarta-sans)", "system-ui", "sans-serif"],
-        // Fallback/legacy support
-        geist: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
-        "geist-mono": ["var(--font-geist-mono)", "monospace"],
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
       animation: {
         "fade-in": "fadeIn 0.5s ease-out",
