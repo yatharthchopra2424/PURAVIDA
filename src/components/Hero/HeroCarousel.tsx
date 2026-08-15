@@ -7,24 +7,26 @@ import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight, Mail } from "lucide-react";
 
 // ─── Slide Data ───────────────────────────────────────────────────────────────
+// Images are WebP, re-encoded from the original 8 MB PNGs (~250 KB each,
+// a 96% reduction). The .png originals are retained on disk.
 const slides = [
   {
     id: 0,
-    image: "/herosectioncarousel/Ancient%20Meets%20Modern.png",
+    image: "/herosectioncarousel/Ancient%20Meets%20Modern.webp",
     headline: ["CURED BY NATURE.", "PERFECTED BY SCIENCE."],
     sub: "State-of-the-art extraction processes that preserve nature's most potent bioactive compounds.",
     align: "left" as const,
   },
   {
     id: 2,
-    image: "/herosectioncarousel/Herbal%20Extraction.png",
+    image: "/herosectioncarousel/Herbal%20Extraction.webp",
     headline: ["PURE BOTANICAL", "EXCELLENCE"],
     sub: "Standardized extracts that capture the full healing spectrum of the world's most revered medicinal plants.",
     align: "left" as const,
   },
   {
     id: 3,
-    image: "/herosectioncarousel/HPLCs.-factory.png",
+    image: "/herosectioncarousel/HPLCs.-factory.webp",
     headline: ["PRECISION AT", "EVERY STAGE"],
     sub: "Advanced HPLC analytics and rigorous quality protocols ensuring uncompromised purity and potency.",
     align: "center" as const,
@@ -119,7 +121,10 @@ export function HeroCarousel() {
   // Progress ticker
   useEffect(() => {
     if (isPaused) return;
-    setProgress(0);
+    // No synchronous setProgress(0) here: setting state directly in an
+    // effect body triggers a cascading render. The first rAF frame
+    // computes elapsed ~0 and sets it anyway, so this is visually
+    // identical without the extra render pass.
     const start = performance.now();
     let rafId: number;
     const tick = (now: number) => {
@@ -164,9 +169,14 @@ export function HeroCarousel() {
               src={slide.image}
               alt={slide.headline.join(" ")}
               fill
-              priority
+              // Only the first slide is the LCP element. Marking all of
+              // them `priority` made the off-screen slides compete with
+              // it for bandwidth, delaying the metric they were meant
+              // to improve.
+              priority={current === 0}
+              loading={current === 0 ? undefined : "lazy"}
               sizes="100vw"
-              quality={90}
+              quality={82}
               className="object-cover object-center"
             />
           </motion.div>

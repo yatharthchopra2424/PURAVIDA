@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/admin-auth";
 import { createSupabaseServiceClient } from "@/lib/supabase-service";
+import { InquiryUpdateSchema, formatZodIssues } from "@/lib/validation";
 
 export async function PATCH(
   req: Request,
@@ -10,13 +11,27 @@ export async function PATCH(
   if (auth instanceof NextResponse) return auth;
 
   const { id } = await params;
-  const body = await req.json();
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const parsed = InquiryUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid payload", fields: formatZodIssues(parsed.error) },
+      { status: 400 }
+    );
+  }
 
   const supabase = createSupabaseServiceClient();
 
   const { data, error } = await supabase
     .from("contacts")
-    .update({ is_read: body.is_read })
+    .update({ is_read: parsed.data.is_read })
     .eq("id", id)
     .select()
     .single();

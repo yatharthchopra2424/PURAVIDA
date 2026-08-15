@@ -111,7 +111,7 @@ export function Header() {
         {/* Nav + Actions grouped on the far right */}
         <div className="flex items-center gap-4">
         {/* Desktop Navigation */}
-        <nav className="relative hidden items-center gap-1 lg:flex flex-shrink-0" style={{ fontFamily: "var(--font-open-sans, 'Open Sans', sans-serif)", transform: "translateZ(0)", isolation: "isolate", WebkitFontSmoothing: "subpixel-antialiased" }}>
+        <nav className="relative hidden items-center gap-1 lg:flex flex-shrink-0" style={{ transform: "translateZ(0)", isolation: "isolate", WebkitFontSmoothing: "subpixel-antialiased" }}>
           {navigation.map((item) => (
             <div
               key={item.label}

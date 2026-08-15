@@ -1,79 +1,43 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, Plus_Jakarta_Sans, Open_Sans } from "next/font/google";
-import localFont from "next/font/local";
-import dynamic from "next/dynamic";
-import { headers } from "next/headers";
+import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 
-import { TopBar } from "@/components/layout/TopBar";
-import { Footer } from "@/components/layout/Footer";
-import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
+import { SITE_URL } from "@/lib/site";
 
-// Modern heading font - Space Grotesk
+/**
+ * Two font families, down from six.
+ *
+ * Space Grotesk (headings) and Inter (body) are the only ones actually
+ * referenced by tailwind.config.ts and globals.css. Plus Jakarta Sans,
+ * Open Sans, Geist Sans and Geist Mono were all loaded with
+ * preload: true on every page but never used — 19 font files competing
+ * for connections during initial render.
+ */
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["500", "600", "700"],
   variable: "--font-space-grotesk",
   display: "swap",
   preload: true,
+  fallback: ["system-ui", "sans-serif"],
+  adjustFontFallback: true,
 });
 
-// Body text font - Inter
 const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-inter",
   display: "swap",
   preload: true,
+  fallback: ["system-ui", "sans-serif"],
+  adjustFontFallback: true,
 });
-
-// Fallback body text font - Plus Jakarta Sans
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-plus-jakarta-sans",
-  display: "swap",
-  preload: true,
-});
-
-// Navbar font - Open Sans
-const openSans = Open_Sans({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-open-sans",
-  display: "swap",
-  preload: true,
-});
-
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-  display: "swap",
-  preload: true,
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-  display: "swap",
-  preload: true,
-});
-
-const Header = dynamic(
-  () => import("@/components/layout/Header").then((m) => m.Header),
-  { ssr: false }
-);
-const MobileNav = dynamic(
-  () => import("@/components/layout/MobileNav").then((m) => m.MobileNav),
-  { ssr: false }
-);
-const CommandPalette = dynamic(
-  () => import("@/components/search/CommandPalette").then((m) => m.CommandPalette),
-  { ssr: false }
-);
 
 export const metadata: Metadata = {
+  // Resolves all relative canonical / Open Graph URLs against the real
+  // production origin. Without this, Next emits relative OG URLs that
+  // crawlers and social scrapers cannot resolve.
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "PuraVida Natural — Premium Botanical Extracts & Ingredients",
     template: "%s | PuraVida Natural",
@@ -90,10 +54,14 @@ export const metadata: Metadata = {
     "bulk botanical supplier",
   ],
   authors: [{ name: "PuraVida Natural" }],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "PuraVida Natural",
+    url: "/",
     title: "PuraVida Natural — Premium Botanical Extracts & Ingredients",
     description:
       "Discover 200+ premium botanical ingredients. ISO certified manufacturer & global exporter.",
@@ -114,40 +82,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+/**
+ * Root layout is now a pure shell.
+ *
+ * It previously called headers() to detect admin routes, which opted
+ * EVERY page in the app out of static rendering — the build reported
+ * `ƒ (Dynamic)` for all 24 routes. Chrome selection is now handled by
+ * the (public) and (admin) route groups instead, which is a routing
+ * concern and costs nothing at runtime.
+ */
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const headersList = await headers();
-  const pathname = headersList.get("x-invoke-path") ?? "";
-  const isAdminRoute = pathname.startsWith("/x-admin");
-
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-      </head>
-      <body
-        className={`${spaceGrotesk.variable} ${inter.variable} ${plusJakartaSans.variable} ${openSans.variable} ${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-surface text-gray-900`}
-      >
-        {isAdminRoute ? (
-          // Admin routes — no public chrome
-          <>{children}</>
-        ) : (
-          <SmoothScrollProvider>
-            <div className="fixed top-0 left-0 right-0 z-50">
-              <TopBar />
-              <Header />
-            </div>
-            <main className="min-h-screen">{children}</main>
-            <Footer />
-            {/* Client-side overlays */}
-            <MobileNav />
-            <CommandPalette />
-          </SmoothScrollProvider>
-        )}
+    <html lang="en" className={`${spaceGrotesk.variable} ${inter.variable}`}>
+      <body className="font-sans antialiased bg-surface text-gray-900">
+        {children}
       </body>
     </html>
   );
