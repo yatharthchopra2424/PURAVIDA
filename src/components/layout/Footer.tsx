@@ -145,9 +145,8 @@ export async function Footer() {
               <p className="text-[11px] text-emerald-200">
                 GST: {COMPANY.gst}
               </p>
-              <p className="text-[11px] text-emerald-200">
-                IEC: {COMPANY.iec}
-              </p>
+              {/* IEC removed with the placeholder value — restore this
+                  line once COMPANY.iec holds the real code. */}
             </div>
           </div>
         </div>

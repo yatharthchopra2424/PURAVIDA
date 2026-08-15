@@ -1,4 +1,5 @@
 import { NavItem, HeroSlide, CompanyStat, BusinessProfileItem, FeatureCard } from "@/types";
+import { COMPANY } from "@/lib/constants";
 
 export const navigation: NavItem[] = [
   { label: "Home", href: "/" },
@@ -70,14 +71,21 @@ export const companyStats: CompanyStat[] = [
   { label: "Certification", value: "ISO", suffix: " 9001:2015" },
 ];
 
+// Sourced from COMPANY so the homepage and footer can never disagree.
+// They previously did: the footer showed the real GST while this table
+// showed a placeholder, on the same page.
+//
+// NOTE: the "Import-Export Code" row was removed because its value was
+// the placeholder "0500XXXXXX". On a B2B export site, buyers verify
+// these — a visibly fake code is worse than none. Add it back here once
+// the real IEC is to hand.
 export const businessProfile: BusinessProfileItem[] = [
   { label: "Nature of Business", value: "Manufacturer & Supplier" },
   { label: "Employee Range", value: "100 - 500" },
-  { label: "Year of Establishment", value: "2000" },
+  { label: "Year of Establishment", value: COMPANY.established },
   { label: "Legal Status", value: "Private Limited Company" },
   { label: "Annual Turnover", value: "₹50 - 100 Crore" },
-  { label: "Import-Export Code", value: "0500XXXXXX" },
-  { label: "GST Number", value: "07XXXXX1234X1ZX" },
+  { label: "GST Number", value: COMPANY.gst },
   { label: "ISO Certification", value: "ISO 9001:2015" },
 ];
 

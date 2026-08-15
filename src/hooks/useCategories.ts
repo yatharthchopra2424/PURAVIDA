@@ -3,50 +3,77 @@
 import { useEffect, useState } from "react";
 import { Category } from "@/types";
 
+/**
+ * Shared category list for client components.
+ *
+ * Previously every consumer ran its own fetch on mount, so a single page
+ * load fired /api/catalog/categories once per component (visible in the
+ * dev server log as several identical requests). The result is the same
+ * for everyone and changes rarely, so it is fetched once per page load
+ * and shared, with in-flight requests de-duplicated.
+ */
+
+let cache: Category[] | null = null;
+let inFlight: Promise<Category[]> | null = null;
+const subscribers = new Set<(categories: Category[]) => void>();
+
+async function loadCategories(): Promise<Category[]> {
+  if (cache) return cache;
+  if (inFlight) return inFlight;
+
+  inFlight = (async () => {
+    try {
+      const response = await fetch("/api/catalog/categories");
+      if (!response.ok) throw new Error("Failed to load categories");
+
+      const data = (await response.json()) as Category[];
+      cache = data;
+      subscribers.forEach((notify) => notify(data));
+      return data;
+    } finally {
+      inFlight = null;
+    }
+  })();
+
+  return inFlight;
+}
+
 export const useCategories = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>(cache ?? []);
+  const [loading, setLoading] = useState(!cache);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isActive = true;
+    let active = true;
 
-    const load = async () => {
-      try {
-        const response = await fetch("/api/catalog/categories", {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          let message = "Failed to load categories";
-          try {
-            const payload = (await response.json()) as { error?: string };
-            if (payload.error) {
-              message = payload.error;
-            }
-          } catch {}
-          throw new Error(message);
-        }
-
-        const data = (await response.json()) as Category[];
-        if (isActive) {
-          setCategories(data);
-          setError(null);
-        }
-      } catch (err) {
-        if (isActive) {
-          setError(err instanceof Error ? err.message : "Failed to load categories");
-        }
-      } finally {
-        if (isActive) {
-          setLoading(false);
-        }
-      }
+    // No early return for a warm cache: useState is already seeded from
+    // it above, so writing the same value here would just be a
+    // setState-in-effect that triggers an extra render. loadCategories()
+    // resolves immediately from cache anyway.
+    const notify = (next: Category[]) => {
+      if (active) setCategories(next);
     };
+    subscribers.add(notify);
 
-    load();
+    loadCategories()
+      .then((data) => {
+        if (!active) return;
+        setCategories(data);
+        setError(null);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(
+          err instanceof Error ? err.message : "Failed to load categories"
+        );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
     return () => {
-      isActive = false;
+      active = false;
+      subscribers.delete(notify);
     };
   }, []);
 

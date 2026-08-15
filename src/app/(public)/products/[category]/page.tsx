@@ -5,6 +5,12 @@ import {
   fetchCategoryBySlug,
   fetchProductsByCategory,
 } from "@/lib/catalog";
+import { JsonLd } from "@/components/shared/JsonLd";
+import {
+  breadcrumbSchema,
+  categoryCollectionSchema,
+  jsonLdGraph,
+} from "@/lib/structured-data";
 import { CategoryClient } from "./CategoryClient";
 
 export const revalidate = 3600;
@@ -81,5 +87,19 @@ export default async function CategoryPage({
   // CategoryClient. Awaiting searchParams here would opt the whole
   // route into dynamic rendering in Next 16 — it is a UI concern
   // (which card to flash), not something the server needs.
-  return <CategoryClient category={category} products={products} />;
+  const jsonLd = jsonLdGraph(
+    categoryCollectionSchema(category, products),
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Products", path: "/products" },
+      { name: category.name, path: `/products/${category.slug}` },
+    ])
+  );
+
+  return (
+    <>
+      <JsonLd data={jsonLd} />
+      <CategoryClient category={category} products={products} />
+    </>
+  );
 }
