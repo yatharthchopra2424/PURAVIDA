@@ -6,7 +6,12 @@ import {
   fetchProductBySlug,
   fetchProductsByCategory,
 } from "@/lib/catalog";
-import { absoluteUrl } from "@/lib/site";
+import { JsonLd } from "@/components/shared/JsonLd";
+import {
+  breadcrumbSchema,
+  jsonLdGraph,
+  productSchema,
+} from "@/lib/structured-data";
 import { ProductDetailClient } from "./ProductDetailClient";
 
 export const revalidate = 3600;
@@ -115,55 +120,22 @@ export default async function ProductDetailPage({
     .filter((entry) => entry.slug !== product.slug)
     .slice(0, 4);
 
-  // Product structured data — the canonical schema for a catalog page,
-  // and what drives rich results for ingredient searches.
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description: product.description,
-    category: product.category,
-    ...(product.botanicalName && {
-      alternateName: product.botanicalName,
-    }),
-    ...(product.image?.startsWith("http") && { image: product.image }),
-    url: absoluteUrl(`/products/${product.categorySlug}/${product.slug}`),
-    brand: {
-      "@type": "Brand",
-      name: "PuraVida Natural",
-    },
-    manufacturer: {
-      "@type": "Organization",
-      name: "PuraVida Natural",
-      url: absoluteUrl("/"),
-    },
-    ...(product.activeIngredient && {
-      additionalProperty: [
-        {
-          "@type": "PropertyValue",
-          name: "Active Ingredient",
-          value: product.activeIngredient,
-        },
-        ...(product.concentration
-          ? [
-              {
-                "@type": "PropertyValue",
-                name: "Concentration",
-                value: product.concentration,
-              },
-            ]
-          : []),
-      ],
-    }),
-  };
+  const jsonLd = jsonLdGraph(
+    productSchema(product),
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Products", path: "/products" },
+      { name: category.name, path: `/products/${category.slug}` },
+      {
+        name: product.name,
+        path: `/products/${product.categorySlug}/${product.slug}`,
+      },
+    ])
+  );
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        // Content is server-generated from our own database, not user input.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
       <ProductDetailClient
         product={product}
         category={category}

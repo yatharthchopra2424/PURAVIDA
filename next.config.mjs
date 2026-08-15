@@ -67,10 +67,21 @@ const securityHeaders = [
 const nextConfig = {
   poweredByHeader: false,
 
+  // The repo root. Without this Next walks up and finds the lockfile in
+  // the parent directory, which is outside this git repository, and
+  // warns on every dev start.
+  turbopack: {
+    root: import.meta.dirname,
+  },
+
   images: {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Next 16 requires every `quality` value used in the app to be
+    // declared here. The hero carousel uses 82; 75 is the default used
+    // everywhere else.
+    qualities: [75, 82],
     // 60s was needlessly short — these assets are content-addressed and
     // change rarely, so re-optimising hourly wasted Vercel image quota.
     minimumCacheTTL: 60 * 60 * 24 * 30,

@@ -4,6 +4,12 @@ import { Footer } from "@/components/layout/Footer";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
+import { JsonLd } from "@/components/shared/JsonLd";
+import {
+  jsonLdGraph,
+  organizationSchema,
+  websiteSchema,
+} from "@/lib/structured-data";
 
 /**
  * Public site chrome.
@@ -27,6 +33,10 @@ export default function PublicLayout({
 }) {
   return (
     <SmoothScrollProvider>
+      {/* Sitewide Organization + WebSite schema. Other pages reference
+          these by @id rather than repeating them. */}
+      <JsonLd data={jsonLdGraph(organizationSchema(), websiteSchema())} />
+
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[200] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-emerald focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald"

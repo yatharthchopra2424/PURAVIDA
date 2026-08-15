@@ -39,7 +39,7 @@ export const COMPANY = {
   salesEmail: "sales@puravidanatural.com",
   address: "169, Uttam Nagar West, New Delhi - 110059, India",
   gst: "07ABCFP5743NIZS",
-  iec: "0500XXXXXX",
+  // iec: add the real Import-Export Code here when available.
   established: "2000",
   hours: "Mon - Sat: 9:00 AM - 6:00 PM IST",
 } as const;
