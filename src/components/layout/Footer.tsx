@@ -63,6 +63,10 @@ export async function Footer() {
               {[
                 { label: "Home", href: "/" },
                 { label: "About Us", href: "/about" },
+                { label: "Our Business", href: "/our-business" },
+                { label: "Pura Vida Advantage", href: "/advantage" },
+                { label: "Facility & Certification", href: "/facility" },
+                { label: "Industry", href: "/industry" },
                 { label: "Our Products", href: "/products" },
                 { label: "Contact", href: "/contact" },
               ].map((link) => (
@@ -76,8 +80,12 @@ export async function Footer() {
                 </li>
               ))}
               <li>
+                {/* Was href="#" — a dead link. Points at the real
+                    product list PDF in public/. */}
                 <a
-                  href="#"
+                  href="/Product List & Certificates/Product List.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-sm text-orange-300 transition-colors hover:text-orange-200"
                 >
                   <Download className="h-3.5 w-3.5" />

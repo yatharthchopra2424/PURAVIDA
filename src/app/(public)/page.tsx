@@ -1,4 +1,5 @@
 import { HeroCarousel } from "@/components/Hero/HeroCarousel";
+import { WelcomeSection } from "@/components/home/WelcomeSection";
 import { WhyChoose } from "@/components/home/WhyChoose";
 import { ShopByCategory } from "@/components/home/ShopByCategory";
 import { ProductCarousel } from "@/components/home/ProductRange";
@@ -16,6 +17,10 @@ export default async function HomePage() {
   return (
     <>
       <HeroCarousel />
+      {/* Brand story sits directly under the hero — everything below it
+          shifts down. Kept outside the parallax wrapper so its own
+          gradient reads cleanly. */}
+      <WelcomeSection />
       <div className="parallax-bg-desktop relative responsive-container" style={{ backgroundImage: "url('/images/Product%20Card%20Backgrounds.png')" }}>
         <WhyChoose />
         <ShopByCategory categories={categories} />

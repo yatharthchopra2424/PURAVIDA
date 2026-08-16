@@ -4,7 +4,12 @@ import { COMPANY } from "@/lib/constants";
 export const navigation: NavItem[] = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
-  { label: "Facility", href: "/about#facility" },
+  { label: "Our Business", href: "/our-business" },
+  { label: "Advantage", href: "/advantage" },
+  // Was "/about#facility" — an anchor to a section that no longer
+  // exists. Now a real page.
+  { label: "Facility", href: "/facility" },
+  { label: "Industry", href: "/industry" },
   {
     label: "Our Product Range",
     href: "/products",
