@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/shared/SectionHeading";
 
 export function AboutSection() {
@@ -33,13 +32,17 @@ export function AboutSection() {
               long-term partnerships with every stakeholder in our value chain.
             </p>
           </div>
-          <div className="mt-10">
-            <Button variant="secondary" size="lg" asChild>
-              <Link href="/about">
-                Learn More About Us
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+          {/* Matched to the other section CTAs: same size, weight,
+              hover lift and arrow nudge, so the page reads as one
+              system rather than three different button styles. */}
+          <div className="mt-12">
+            <Link
+              href="/about"
+              className="group inline-flex items-center gap-2 rounded-xl bg-emerald px-8 py-4 text-base font-bold text-white shadow-lg shadow-emerald/25 transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-600 hover:shadow-xl hover:shadow-emerald/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald focus-visible:ring-offset-2"
+            >
+              Learn More About Us
+              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+            </Link>
           </div>
         </div>
       </div>

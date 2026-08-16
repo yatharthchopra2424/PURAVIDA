@@ -24,9 +24,11 @@ export function Header() {
   const isHomePage = pathname === '/';
   
   // Check if we're on a page that should always use light navbar
-  const shouldUseLightNav = pathname?.startsWith('/products') || 
-                          pathname?.startsWith('/about') || 
-                          pathname?.startsWith('/contact');
+  // Every route except the homepage uses the light (white) navbar —
+  // listing them individually meant each new page shipped with the
+  // dark-hero styling and an invisible logo until someone remembered
+  // to add it here.
+  const shouldUseLightNav = !!pathname && pathname !== '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,7 +46,6 @@ export function Header() {
   const useLightStyle = shouldUseLightNav || (isHomePage && isScrolled);
   // Use green metallic style on home page when not scrolled
   const useGreenStyle = isHomePage && !isScrolled;
-  const useScrolledHomeWhiteLogo = isHomePage && isScrolled;
 
   const clearMegaMenuTimer = useCallback(() => {
     if (megaMenuCloseTimer.current) {
@@ -83,22 +84,27 @@ export function Header() {
         : "bg-[rgba(6,44,29,0.72)] border-b border-white/10"
     )}>
       <div className="w-full flex items-center justify-between gap-4 px-6 sm:px-10 lg:px-14 py-[15px] lg:py-1">
-        {/* Logo */}
+        {/* Logo.
+            Which asset to show follows the NAV STYLE, not the
+            home-scrolled state. Keying it to `useScrolledHomeWhiteLogo`
+            meant every interior page (/about, /products, /contact) got
+            logo-bg-rm.png — the knocked-out version intended for the
+            dark hero — rendering it near-invisible on the white navbar. */}
         <Link
           href="/"
           className={cn(
             "flex-shrink-0",
-            useScrolledHomeWhiteLogo ? "my-0 ml-2" : "-my-4"
+            useLightStyle ? "my-0 ml-2" : "-my-4"
           )}
         >
           <div
             className={cn(
               "relative",
-              useScrolledHomeWhiteLogo ? "h-[76px] w-56" : "h-[115px] w-80"
+              useLightStyle ? "h-[76px] w-56" : "h-[115px] w-80"
             )}
           >
             <Image
-              src={useScrolledHomeWhiteLogo ? "/images/logo-new.png" : "/images/logo-bg-rm.png"}
+              src={useLightStyle ? "/images/logo-new.png" : "/images/logo-bg-rm.png"}
               alt="Pura Vida Natural"
               fill
               sizes="192px"

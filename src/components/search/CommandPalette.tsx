@@ -4,6 +4,7 @@ import React, { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLenis } from "lenis/react";
 import { Search, X, ArrowRight } from "lucide-react";
 import { useSearchStore } from "@/stores/useSearchStore";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
@@ -37,27 +38,79 @@ export function CommandPalette() {
     }
   }, [isOpen, close]);
 
+  /**
+   * Scroll lock.
+   *
+   * The page kept scrolling behind the open dialog. Lenis drives
+   * scrolling here, so `overflow: hidden` on <body> alone does nothing —
+   * Lenis has to be told to stop. Both are applied: Lenis for the smooth
+   * scroller, and the body style for any native scroll (and for the
+   * scrollbar-width compensation that stops the layout shifting).
+   */
+  const lenis = useLenis();
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    lenis?.stop();
+
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+    const previousPaddingRight = body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      lenis?.start();
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPaddingRight;
+    };
+  }, [isOpen, lenis]);
+
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop.
+              Lighter scrim and no heavy blur: blurring the whole page
+              behind a search dialog costs a full-viewport filter repaint
+              on every frame and made the underlying content unreadable
+              rather than merely de-emphasised. */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[100] bg-emerald-950/45"
             onClick={close}
+            aria-hidden="true"
           />
 
-          {/* Dialog */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="fixed left-1/2 top-[15vh] z-[101] w-full max-w-2xl -translate-x-1/2"
+          {/* Centred dialog.
+              Was `left-1/2 top-[15vh] -translate-x-1/2`, which drifted
+              off-centre once the body gained scrollbar-compensation
+              padding. A flex-centred fixed wrapper is immune to that and
+              is the pattern used by every command palette people know
+              (Linear, GitHub, Algolia). */}
+          <div
+            className="fixed inset-0 z-[101] flex items-start justify-center overflow-y-auto p-4 pt-[12vh] sm:pt-[14vh]"
+            onClick={close}
           >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Search products"
+              initial={{ opacity: 0, scale: 0.97, y: -12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: -12 }}
+              transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+              className="w-full max-w-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
             <Command
               className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
               shouldFilter={false}
@@ -79,14 +132,20 @@ export function CommandPalette() {
                 )}
                 <button
                   onClick={close}
-                  className="flex-shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                  aria-label="Close search"
+                  className="flex-shrink-0 rounded-lg p-2 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-6 w-6" strokeWidth={2.5} />
                 </button>
               </div>
 
-              {/* Results */}
-              <Command.List className="max-h-[60vh] overflow-y-auto p-3">
+              {/* Results.
+                  data-lenis-prevent so the wheel reaches this list
+                  instead of being swallowed by the smooth scroller. */}
+              <Command.List
+                data-lenis-prevent
+                className="filter-scroll max-h-[60vh] overflow-y-auto overscroll-contain p-3"
+              >
                 {isLoading && query.length >= 1 && (
                   <Command.Empty className="px-5 py-12 text-center">
                     <div className="inline-block animate-spin mb-4">
@@ -274,7 +333,8 @@ export function CommandPalette() {
                 )}
               </div>
             </Command>
-          </motion.div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

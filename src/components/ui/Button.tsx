@@ -11,11 +11,14 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-orange-500 text-white hover:bg-orange-600 focus-visible:ring-orange-500 shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40",
+          "bg-orange-500 text-white hover:bg-orange-600 hover:-translate-y-0.5 focus-visible:ring-orange-500 shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/40",
         secondary:
-          "bg-emerald text-white hover:bg-emerald-800 focus-visible:ring-emerald shadow-lg shadow-emerald/25",
+          "bg-emerald text-white hover:bg-emerald-600 hover:-translate-y-0.5 focus-visible:ring-emerald shadow-lg shadow-emerald/25 hover:shadow-xl hover:shadow-emerald/35",
+        // A bare 2px outline on a pale background reads as disabled.
+        // A tinted fill plus a shadow keeps it clearly a secondary
+        // action while still looking pressable.
         outline:
-          "border-2 border-emerald text-emerald hover:bg-emerald hover:text-white focus-visible:ring-emerald",
+          "border-2 border-emerald bg-emerald-50/70 text-emerald-700 shadow-sm hover:bg-emerald hover:text-white hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald/25 focus-visible:ring-emerald",
         "outline-white":
           "border-2 border-white text-white hover:bg-white hover:text-emerald focus-visible:ring-white",
         ghost:

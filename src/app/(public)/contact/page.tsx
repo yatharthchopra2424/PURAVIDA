@@ -124,7 +124,7 @@ export default function ContactPage() {
 
   if (status === "success") {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center py-20">
+      <div className="flex min-h-[60vh] items-center justify-center pb-20 pt-[11rem] lg:pt-[13rem]">
         <div className="text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
             <CheckCircle className="h-8 w-8 text-emerald" />
@@ -150,7 +150,7 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="py-12 lg:py-20">
+    <div className="pb-12 pt-[9.5rem] lg:pb-20 lg:pt-[11.5rem]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Breadcrumb */}
         <nav className="mb-8 flex items-center gap-2 text-sm text-gray-500">

@@ -7,7 +7,7 @@
 export default function Loading() {
   return (
     <div
-      className="flex min-h-[60vh] items-center justify-center px-4 py-20"
+      className="flex min-h-[60vh] items-center justify-center px-4 pb-20 pt-[11rem] lg:pt-[13rem]"
       role="status"
       aria-live="polite"
       aria-busy="true"

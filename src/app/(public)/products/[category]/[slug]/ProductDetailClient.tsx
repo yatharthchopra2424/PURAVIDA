@@ -30,7 +30,7 @@ export function ProductDetailClient({
   const addItem = useCartStore((s) => s.addItem);
 
   return (
-    <div className="py-12 lg:py-20">
+    <div className="pb-12 pt-[9.5rem] lg:pb-20 lg:pt-[11.5rem]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Breadcrumb */}
         <nav className="mb-8 flex items-center gap-2 text-sm text-gray-500">

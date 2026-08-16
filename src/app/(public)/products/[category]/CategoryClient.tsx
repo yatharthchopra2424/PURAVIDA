@@ -1,8 +1,7 @@
 "use client";
 
-import React, { Suspense, useMemo, useState } from "react";
+import React, { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { Category, Product } from "@/types";
 import { ProductGrid } from "@/components/products/ProductGrid";
@@ -10,26 +9,40 @@ import { ProductFilters } from "@/components/products/ProductFilters";
 import { Input } from "@/components/ui/Input";
 
 /**
- * useSearchParams() requires a Suspense boundary on a statically
- * rendered route: the shell prerenders, and this subtree fills in on
- * the client once the URL is known.
+ * Reads `?highlight=` from the URL.
+ *
+ * Deliberately NOT useSearchParams(): on a statically rendered route
+ * that forces the entire subtree out of the prerendered HTML, which
+ * silently removed the heading, filters and product grid from what the
+ * server — and crawlers — return.
+ *
+ * useSyncExternalStore gives a server snapshot of `undefined` and the
+ * real value on the client, with no setState-in-effect and no
+ * hydration mismatch. Highlighting a card is purely visual, so
+ * resolving it after hydration costs nothing.
  */
-export function CategoryClient(props: { category: Category; products: Product[] }) {
-  return (
-    <Suspense fallback={<CategoryView {...props} />}>
-      <CategoryView {...props} />
-    </Suspense>
+const subscribeToHistory = (onChange: () => void) => {
+  window.addEventListener("popstate", onChange);
+  return () => window.removeEventListener("popstate", onChange);
+};
+
+function useHighlightParam(): string | undefined {
+  return useSyncExternalStore(
+    subscribeToHistory,
+    () =>
+      new URLSearchParams(window.location.search).get("highlight") ?? undefined,
+    () => undefined
   );
 }
 
-function CategoryView({
+export function CategoryClient({
   category,
   products,
 }: {
   category: Category;
   products: Product[];
 }) {
-  const highlightSlug = useSearchParams().get("highlight") ?? undefined;
+  const highlightSlug = useHighlightParam();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
@@ -90,7 +103,7 @@ function CategoryView({
   }, [products, searchQuery, selectedApplications, selectedIngredients, sortBy]);
 
   return (
-    <div className="py-12 lg:py-20">
+    <div className="pb-12 pt-[9.5rem] lg:pb-20 lg:pt-[11.5rem]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Breadcrumb */}
         <nav className="mb-8 flex items-center gap-2 text-sm text-gray-600">
