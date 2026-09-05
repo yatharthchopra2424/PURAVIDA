@@ -2,6 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServiceClient } from "@/lib/supabase-service";
 import { ContactSchema, formatZodIssues } from "@/lib/validation";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import {
+  renderAdminNotificationEmail,
+  renderCustomerConfirmationEmail,
+} from "@/lib/email-templates";
 
 export const dynamic = "force-dynamic";
 
@@ -87,62 +91,72 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 5 · Email ─────────────────────────────────────────────
-    const cartSection =
-      cartItems.length > 0
-        ? `\n\nQuote Cart:\n${cartItems
-            .map((item) => `  • ${item.name} — qty ${item.quantity}`)
-            .join("\n")}`
-        : "";
-
-    const emailBody = `
-New quote inquiry from ${name} <${email}>
-
-Product: ${product || "Not specified"}
-Quantity: ${quantity || "Not specified"}
-
-Additional Details:
-${description || "None provided"}
-${cartSection}
-`.trim();
-
     const resendApiKey = process.env.RESEND_API_KEY;
     const recipientEmail =
       process.env.CONTACT_EMAIL || "ps@puravidanaturalindia.com";
 
-    // NOTE: `from` must be a verified domain in Resend. The previous
-    // onboarding@resend.dev is a shared sandbox sender — it lands in
-    // spam and is not usable for production volume.
+    // NOTE: `from` must be a verified domain in Resend. The sandbox
+    // sender onboarding@resend.dev can only deliver to the Resend
+    // account's own address — it CANNOT reach arbitrary customers, so
+    // the confirmation email below will silently fail until a real
+    // domain is verified. See ADD-SEARCH-CONSOLE.md / README for the
+    // one-time setup.
     const fromAddress =
       process.env.RESEND_FROM || "PuraVida Quotes <onboarding@resend.dev>";
 
+    const emailData = { name, email, product, quantity, description, cartItems };
+
     let emailed = false;
+    let confirmed = false;
     if (resendApiKey) {
       try {
         const { Resend } = await import("resend");
         const resend = new Resend(resendApiKey);
 
+        const admin = renderAdminNotificationEmail(emailData);
         await resend.emails.send({
           from: fromAddress,
           to: recipientEmail,
           replyTo: email,
-          subject: sanitizeHeaderValue(
-            `Quote Request — ${product || "General Inquiry"} from ${name}`
-          ),
-          text: emailBody,
+          subject: sanitizeHeaderValue(admin.subject),
+          html: admin.html,
+          text: admin.text,
         });
         emailed = true;
       } catch (emailError) {
-        console.error("[contact] Resend send failed", emailError);
+        console.error("[contact] Admin notification send failed", emailError);
+      }
+
+      try {
+        const { Resend } = await import("resend");
+        const resend = new Resend(resendApiKey);
+
+        const confirmation = renderCustomerConfirmationEmail(emailData);
+        await resend.emails.send({
+          from: fromAddress,
+          to: email,
+          replyTo: recipientEmail,
+          subject: sanitizeHeaderValue(confirmation.subject),
+          html: confirmation.html,
+          text: confirmation.text,
+        });
+        confirmed = true;
+      } catch (emailError) {
+        // Best-effort: the lead is already captured above, so a failed
+        // confirmation email should not turn into a 500 for the customer.
+        console.error("[contact] Customer confirmation send failed", emailError);
       }
     } else {
       console.log("─── NEW QUOTE INQUIRY (Resend not configured) ───");
-      console.log(emailBody);
+      console.log(renderAdminNotificationEmail(emailData).text);
       console.log("─────────────────────────────────────────────────");
     }
 
     // Only report success if the enquiry was captured somewhere. If
-    // both the database and email failed, the lead is genuinely lost
-    // and the user must be told rather than shown a thank-you screen.
+    // both the database and the admin notification failed, the lead is
+    // genuinely lost and the user must be told rather than shown a
+    // thank-you screen. A failed *confirmation* email doesn't count —
+    // the lead itself is still safely captured.
     if (!persisted && !emailed && resendApiKey) {
       return NextResponse.json(
         {
@@ -154,7 +168,7 @@ ${cartSection}
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, confirmationSent: confirmed });
   } catch (err) {
     console.error("[contact] Unhandled error", err);
     return NextResponse.json(

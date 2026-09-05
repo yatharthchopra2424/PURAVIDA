@@ -1,5 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 import { SITE_URL } from "@/lib/site";
@@ -72,14 +74,29 @@ export const metadata: Metadata = {
     description:
       "Discover 200+ premium botanical ingredients. ISO certified manufacturer & global exporter.",
   },
-  icons: {
-    icon: "/images/logo-new.png",
-    apple: "/images/logo-new.png",
-  },
+  // icon.png / apple-icon.png / favicon.ico in this directory are picked
+  // up automatically by Next's file-based metadata convention — no
+  // `icons` field needed here. See also manifest.ts for the PWA icons.
   robots: {
     index: true,
     follow: true,
   },
+  // Search Console / Bing Webmaster ownership verification. Leave the env
+  // vars unset until you've added the property — ADD-SEARCH-CONSOLE.md
+  // has the exact steps and where the token comes from.
+  verification: {
+    ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+      : {}),
+    ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { other: { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } }
+      : {}),
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#6AA40E",
+  colorScheme: "light",
 };
 
 /**
@@ -100,6 +117,8 @@ export default function RootLayout({
     <html lang="en" className={`${spaceGrotesk.variable} ${inter.variable}`}>
       <body className="font-sans antialiased bg-surface text-gray-900">
         {children}
+        <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );

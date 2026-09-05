@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -9,6 +10,7 @@ import { SectionHeading } from "@/components/shared/SectionHeading";
 import { useCartStore } from "@/stores/useCartStore";
 import { cn } from "@/lib/utils";
 import { Category, Product } from "@/types";
+import { PRODUCT_FALLBACK_IMAGE } from "@/lib/constants";
 
 export function ProductCarousel({
   categories,
@@ -87,24 +89,37 @@ function ProductQuickCard({
   product: Product;
   onAddToQuote: () => void;
 }) {
+  const hasRealImage = product.image !== PRODUCT_FALLBACK_IMAGE;
   return (
     <motion.div
       layoutId={`product-${product.slug}`}
       className="flex w-[280px] flex-shrink-0 snap-start flex-col rounded-2xl border border-gray-100 bg-white overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-emerald/20"
     >
       {/* Image */}
-      <div className="relative h-48 flex items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url('${product.image}')` }}
-        />
-        <div className="absolute inset-0 bg-emerald/10" />
-        <div className="text-center p-4">
-          <span className="text-3xl">🌿</span>
-          <p className="mt-2 text-xs font-medium text-emerald-600">
-            {product.category}
-          </p>
-        </div>
+      <div className="relative h-48 flex items-center justify-center overflow-hidden bg-emerald-50">
+        {hasRealImage ? (
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="280px"
+            className="object-cover"
+          />
+        ) : (
+          <>
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: "url('/images/Product%20Card%20Backgrounds.png')" }}
+            />
+            <div className="absolute inset-0 bg-emerald/10" />
+            <div className="text-center p-4">
+              <span className="text-3xl">🌿</span>
+              <p className="mt-2 text-xs font-medium text-emerald-600">
+                {product.category}
+              </p>
+            </div>
+          </>
+        )}
         {product.qualityBadges.length > 0 && (
           <div className="absolute top-3 right-3 flex gap-1">
             {product.qualityBadges.slice(0, 2).map((badge) => (

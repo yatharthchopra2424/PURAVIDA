@@ -168,6 +168,10 @@ export async function Footer() {
             <span>Export Quality Certified</span>
             <span className="text-emerald-400">|</span>
             <span>Made in India</span>
+            <span className="text-emerald-400">|</span>
+            <Link href="/image-credits" className="hover:text-white">
+              Image Credits
+            </Link>
           </div>
         </div>
       </div>

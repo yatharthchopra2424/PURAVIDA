@@ -2,12 +2,14 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { Category, Product } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useCartStore } from "@/stores/useCartStore";
+import { PRODUCT_FALLBACK_IMAGE } from "@/lib/constants";
 
 const badgeVariantMap: Record<string, "iso" | "gmp" | "fssai" | "halal" | "fda" | "export"> = {
   ISO: "iso",
@@ -28,6 +30,7 @@ export function ProductDetailClient({
   relatedProducts: Product[];
 }) {
   const addItem = useCartStore((s) => s.addItem);
+  const hasRealImage = product.image !== PRODUCT_FALLBACK_IMAGE;
 
   return (
     <div className="pb-12 pt-[9.5rem] lg:pb-20 lg:pt-[11.5rem]">
@@ -62,17 +65,26 @@ export function ProductDetailClient({
             layoutId={`product-image-${product.slug}`}
             className="relative aspect-square overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center"
           >
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url('${product.image}')` }}
-            />
-            <div className="absolute inset-0 bg-emerald/10" />
-            <div className="relative text-center">
-              <span className="text-8xl">🌿</span>
-              <p className="mt-4 text-lg font-medium text-emerald-600">
-                {product.category}
-              </p>
-            </div>
+            {hasRealImage ? (
+              <Image
+                src={product.image}
+                alt={`${product.name}${product.botanicalName ? ` (${product.botanicalName})` : ""} — ${product.category}`}
+                fill
+                priority
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
+              />
+            ) : (
+              <>
+                <div className="absolute inset-0 bg-emerald/10" />
+                <div className="relative text-center">
+                  <span className="text-8xl">🌿</span>
+                  <p className="mt-4 text-lg font-medium text-emerald-600">
+                    {product.category}
+                  </p>
+                </div>
+              </>
+            )}
             {/* Badges overlay */}
             <div className="absolute top-6 left-6 flex flex-wrap gap-2">
               {product.qualityBadges.map((badge) => (
@@ -213,18 +225,27 @@ function SpecRow({ label, value }: { label: string; value: string }) {
 }
 
 function RelatedCard({ product }: { product: Product }) {
+  const hasRealImage = product.image !== PRODUCT_FALLBACK_IMAGE;
   return (
     <Link
       href={`/products/${product.categorySlug}/${product.slug}`}
       className="group rounded-2xl border border-gray-100 bg-white p-4 transition-all hover:border-emerald/20 hover:shadow-md"
     >
       <div className="mb-3 flex h-28 items-center justify-center rounded-xl bg-emerald-50 relative overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url('${product.image}')` }}
-        />
-        <div className="absolute inset-0 bg-emerald/10" />
-        <span className="relative z-10 text-3xl">🌿</span>
+        {hasRealImage ? (
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="200px"
+            className="object-cover"
+          />
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-emerald/10" />
+            <span className="relative z-10 text-3xl">🌿</span>
+          </>
+        )}
       </div>
       <h4 className="text-sm font-bold text-gray-900 group-hover:text-emerald transition-colors">
         {product.name}
