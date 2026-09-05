@@ -29,11 +29,21 @@ export const BREAKPOINTS = {
 
 export const HERO_SLIDE_INTERVAL = 5000;
 
+// ─── Product image fallback ──────────────────────────────────
+// Shared between catalog.ts (server, resolves DB rows) and any client
+// component that needs to tell "real photo" from "no image yet" apart.
+export const PRODUCT_FALLBACK_IMAGE = "/images/Product%20Card%20Backgrounds.png";
+
 // ─── Company Info ────────────────────────────────────────────
 
 export const COMPANY = {
   name: "PuraVida Natural",
-  tagline: "Ayurvedic Heritage. Modern Science.",
+  // Was "Ayurvedic Heritage. Modern Science." — a third, different
+  // tagline from the one on the actual logo artwork and hero copy
+  // ("Cured by Nature. Perfected by Science."). This feeds
+  // structured-data.ts's `slogan` field, so the mismatch was reaching
+  // Google too, not just visitors.
+  tagline: "Cured by Nature. Perfected by Science.",
   phone: "+91-9811647596",
   email: "rk@puravida.org.in",
   salesEmail: "sales@puravidanatural.com",

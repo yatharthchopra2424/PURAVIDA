@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Product } from "@/types";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { MagneticWrapper } from "@/components/ui/MagneticWrapper";
 import { useCartStore } from "@/stores/useCartStore";
+import { PRODUCT_FALLBACK_IMAGE } from "@/lib/constants";
 
 interface ProductCardProps {
   product: Product;
@@ -26,6 +28,7 @@ const badgeVariantMap: Record<string, "iso" | "gmp" | "fssai" | "halal" | "fda" 
 
 export function ProductCard({ product, highlight = false }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem);
+  const hasRealImage = product.image !== PRODUCT_FALLBACK_IMAGE;
 
   return (
     <MagneticWrapper strength={0.12}>
@@ -46,19 +49,31 @@ export function ProductCard({ product, highlight = false }: ProductCardProps) {
         <Link href={`/products/${product.categorySlug}/${product.slug}`}>
           <motion.div
             layoutId={`product-image-${product.slug}`}
-            className="relative h-48 flex items-center justify-center overflow-hidden"
+            className="relative h-48 flex items-center justify-center overflow-hidden bg-emerald-50"
           >
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: "url('/images/Product%20Card%20Backgrounds.png')" }}
-            />
-            <div className="absolute inset-0 bg-emerald/10" />
-            <div className="text-center p-4 transition-transform duration-300 group-hover:scale-110">
-              <span className="text-4xl">🌿</span>
-              <p className="mt-2 text-xs font-medium text-emerald-600">
-                {product.category}
-              </p>
-            </div>
+            {hasRealImage ? (
+              <Image
+                src={product.image}
+                alt={`${product.name}${product.botanicalName ? ` (${product.botanicalName})` : ""} — ${product.category}`}
+                fill
+                sizes="(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 45vw"
+                className="object-cover transition-transform duration-300 group-hover:scale-110"
+              />
+            ) : (
+              <>
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: "url('/images/Product%20Card%20Backgrounds.png')" }}
+                />
+                <div className="absolute inset-0 bg-emerald/10" />
+                <div className="text-center p-4 transition-transform duration-300 group-hover:scale-110">
+                  <span className="text-4xl">🌿</span>
+                  <p className="mt-2 text-xs font-medium text-emerald-600">
+                    {product.category}
+                  </p>
+                </div>
+              </>
+            )}
 
             {/* Quality badges */}
             <div className="absolute top-3 left-3 flex flex-wrap gap-1">

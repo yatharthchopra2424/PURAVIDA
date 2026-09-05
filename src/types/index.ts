@@ -67,13 +67,6 @@ export interface FeatureCard {
   description: string;
 }
 
-// ─── Hero Types ──────────────────────────────────────────────
-
-export interface HeroSlide {
-  headline: string;
-  subheading: string;
-  description: string;
-}
 
 // ─── Contact Form ────────────────────────────────────────────
 

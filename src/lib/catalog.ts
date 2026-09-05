@@ -1,7 +1,6 @@
 import { Category, Product, QualityBadge } from "@/types";
 import { getProductImageUrl, getSupabaseServerClient } from "@/lib/supabase";
-
-const FALLBACK_IMAGE = "/images/Product%20Card%20Backgrounds.png";
+import { PRODUCT_FALLBACK_IMAGE as FALLBACK_IMAGE } from "@/lib/constants";
 const FALLBACK_DESCRIPTION = "Details coming soon.";
 
 type CategoryRow = {
@@ -39,11 +38,25 @@ const mapCategoryRow = (row: CategoryRow): Category => ({
   slug: row.slug,
   label: row.label || row.name,
   description: row.description || "",
-  image: row.image || FALLBACK_IMAGE,
+  image: resolveCategoryImage(row.image),
   subcategories: row.subcategories || [],
   exampleProducts: row.example_products || [],
   productCount: row.product_count ?? 0,
 });
+
+/**
+ * Categories store either a bare storage key (e.g. "category-oleoresins.jpg",
+ * same convention as products' image_path) or a legacy local path like
+ * "/images/Product%20Card%20Backgrounds.png". Unlike products, this never
+ * went through getProductImageUrl — invisible while every category used
+ * the same local fallback, but a bare key resolves to a broken same-origin
+ * URL instead of the Supabase Storage object it actually is.
+ */
+function resolveCategoryImage(image: string | null): string {
+  if (!image) return FALLBACK_IMAGE;
+  if (image.startsWith("/") || image.startsWith("http")) return image;
+  return getProductImageUrl(image);
+}
 
 const mapProductRow = (
   row: ProductRow,

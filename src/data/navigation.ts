@@ -1,4 +1,4 @@
-import { NavItem, HeroSlide, CompanyStat, BusinessProfileItem, FeatureCard } from "@/types";
+import { NavItem, CompanyStat, BusinessProfileItem, FeatureCard } from "@/types";
 import { COMPANY } from "@/lib/constants";
 
 export const navigation: NavItem[] = [
@@ -39,33 +39,6 @@ export const navigation: NavItem[] = [
         image: "/images/Product%20Card%20Backgrounds.png",
       },
     ],
-  },
-];
-
-export const heroSlides: HeroSlide[] = [
-  {
-    headline: "Ayurvedic Heritage.\nModern Science.",
-    subheading: "Ancient Wisdom, Contemporary Innovation",
-    description:
-      "Bridging 5,000 years of Ayurvedic tradition with cutting-edge extraction technology to deliver the purest botanical ingredients on the planet.",
-  },
-  {
-    headline: "Advanced Manufacturing\nCapabilities",
-    subheading: "State-of-the-Art Production",
-    description:
-      "ISO 9001:2015 certified facilities equipped with supercritical CO₂ extraction, spray drying, and molecular distillation technologies.",
-  },
-  {
-    headline: "Uncompromising\nQuality Control",
-    subheading: "Laboratory-Verified Excellence",
-    description:
-      "Every batch HPLC tested and verified. From raw material screening to final product release, quality is our non-negotiable promise.",
-  },
-  {
-    headline: "Precision Herbal\nExtraction",
-    subheading: "Preserving Natural Potency",
-    description:
-      "Our proprietary extraction processes preserve the full spectrum of bioactive compounds while achieving industry-leading standardization levels.",
   },
 ];
 
