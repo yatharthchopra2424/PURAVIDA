@@ -56,22 +56,11 @@ redeploy → verify.
 
 ## 4 · One more thing this touches: the contact form confirmation email
 
-The customer-confirmation email (added this session) uses the same Resend
-account as your existing lead-notification email. Resend's default sender —
-`onboarding@resend.dev` — can only deliver to *your own* Resend account
-address, not to arbitrary customers. Until you verify a sending domain, the
-confirmation email will silently fail (the lead is still saved and you still
-get notified — only the customer's "we got it" email won't arrive).
+Email no longer goes through Resend — the site sends over a direct SMTP
+connection to the company mailbox instead. See `EMAIL-SETUP.md` for the
+current setup.
 
-Fix, ~10 minutes:
-1. https://resend.com/domains → **Add Domain** → `puravidanaturalindia.com`
-   (or whichever domain you want mail to come from).
-2. Add the DNS records Resend shows you (SPF/DKIM, usually 2–3 TXT/CNAME
-   records) at your domain registrar.
-3. Once verified, set in Vercel:
-   ```
-   RESEND_FROM=PuraVida Quotes <quotes@puravidanaturalindia.com>
-   ```
-4. Redeploy. Both emails (customer confirmation + team notification) now
-   send from your own domain instead of the shared sandbox address, which
-   also means they're far less likely to land in spam.
+What still matters for deliverability is the DNS side, and it is the same
+work either way: the sending domain needs **SPF**, **DKIM** and **DMARC**
+records, or the confirmation email lands in spam. `EMAIL-SETUP.md` §3 has
+the records.

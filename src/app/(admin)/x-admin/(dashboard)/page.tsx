@@ -1,4 +1,13 @@
-import { Package, Tag, MessageSquare, MailOpen, Activity } from "lucide-react";
+import Link from "next/link";
+import {
+  Package,
+  Tag,
+  MessageSquare,
+  MailOpen,
+  Activity,
+  Users,
+  Mail,
+} from "lucide-react";
 import { createSupabaseServiceClient } from "@/lib/supabase-service";
 import { StatsCard } from "@/components/admin/dashboard/StatsCard";
 import { RecentInquiries } from "@/components/admin/dashboard/RecentInquiries";
@@ -36,7 +45,45 @@ async function getDashboardData() {
       .limit(5),
   ]);
 
+  // The lead tables are created by a SQL file run by hand, so their
+  // absence is an expected state rather than a failure. Queried apart
+  // from the block above so one missing table cannot blank the whole
+  // dashboard.
+  let leads = { total: 0, priorityA: 0, ready: false };
+  let campaigns = { active: 0, sent: 0 };
+
+  try {
+    const [totalLeads, aLeads, sending, sentMail] = await Promise.all([
+      supabase.from("leads").select("id", { count: "exact", head: true }),
+      supabase
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .eq("priority", "A"),
+      supabase
+        .from("email_campaigns")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "sending"),
+      supabase
+        .from("email_sends")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "sent"),
+    ]);
+
+    if (!totalLeads.error) {
+      leads = {
+        total: totalLeads.count ?? 0,
+        priorityA: aLeads.count ?? 0,
+        ready: true,
+      };
+      campaigns = { active: sending.count ?? 0, sent: sentMail.count ?? 0 };
+    }
+  } catch {
+    // Leave the defaults; the cards render as "not set up".
+  }
+
   return {
+    leads,
+    campaigns,
     totalProducts: productsRes.count ?? 0,
     totalCategories: categoriesRes.count ?? 0,
     totalInquiries: totalInquiriesRes.count ?? 0,
@@ -99,6 +146,34 @@ export default async function AdminDashboardPage() {
         />
       </div>
 
+      {/* Outreach — the lead database and campaign engine at a glance.
+          Without these the dashboard reported only the catalogue, and
+          the two largest features in the panel were invisible from it. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatsCard
+          title="Leads"
+          value={data.leads.total}
+          icon={Users}
+          description={
+            data.leads.ready
+              ? `${data.leads.priorityA} best-fit (priority A)`
+              : "Not set up yet"
+          }
+          accentColor="emerald"
+        />
+        <StatsCard
+          title="Emails Sent"
+          value={data.campaigns.sent}
+          icon={Mail}
+          description={
+            data.campaigns.active > 0
+              ? `${data.campaigns.active} campaign(s) sending now`
+              : "Across all campaigns"
+          }
+          accentColor={data.campaigns.active > 0 ? "orange" : "blue"}
+        />
+      </div>
+
       {/* Lower section: Recent inquiries + Top products */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RecentInquiries inquiries={data.recentInquiries} />
@@ -110,7 +185,7 @@ export default async function AdminDashboardPage() {
         <h2 className="text-white font-heading font-semibold text-base mb-4">
           Quick Actions
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {[
             {
               label: "Add Product",
@@ -131,6 +206,18 @@ export default async function AdminDashboardPage() {
               color: "purple",
             },
             {
+              label: "Browse Leads",
+              href: "/x-admin/leads",
+              icon: Users,
+              color: "emerald",
+            },
+            {
+              label: "Campaigns",
+              href: "/x-admin/campaigns",
+              icon: Mail,
+              color: "blue",
+            },
+            {
               label: "Settings",
               href: "/x-admin/settings",
               icon: Activity,
@@ -139,7 +226,7 @@ export default async function AdminDashboardPage() {
           ].map((action) => {
             const Icon = action.icon;
             return (
-              <a
+              <Link
                 key={action.href}
                 href={action.href}
                 className="flex flex-col items-center gap-2 p-4 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-center transition-colors group"
@@ -150,7 +237,7 @@ export default async function AdminDashboardPage() {
                 <span className="text-zinc-300 text-xs font-medium">
                   {action.label}
                 </span>
-              </a>
+              </Link>
             );
           })}
         </div>

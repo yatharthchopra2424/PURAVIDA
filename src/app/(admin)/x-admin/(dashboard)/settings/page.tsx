@@ -1,210 +1,126 @@
-"use client";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { createSupabaseServiceClient } from "@/lib/supabase-service";
+import { getAdminEmails } from "@/lib/admin-allowlist";
+import { getMailerConfig } from "@/lib/mailer";
+import { COMPANY } from "@/lib/constants";
+import { SITE_URL } from "@/lib/site";
+import { checkEmailAuth, domainOf } from "@/lib/email-auth";
+import SettingsClient from "./SettingsClient";
+import type { SystemStatus } from "./SystemStatusPanel";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Lock, AlertTriangle, CheckCircle } from "lucide-react";
-import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
+export const metadata = {
+  title: "Settings — PuraVida Admin",
+};
 
-export default function SettingsPage() {
-  const router = useRouter();
+async function getStatus(adminEmail: string): Promise<SystemStatus> {
+  const mailer = getMailerConfig();
 
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isChanging, setIsChanging] = useState(false);
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  // A From: domain that disagrees with the site's own is a genuine spam
+  // signal — but only in production. In development SITE_URL is
+  // localhost, which is not a sending identity at all, so comparing
+  // against it produced a scary and completely false warning on every
+  // dev machine. Only a real, non-preview host is worth comparing.
+  let domainMismatch: string | null = null;
+  let authReport: SystemStatus["mail"]["auth"] = null;
 
-  const supabase = createSupabaseBrowserClient();
+  if (mailer) {
+    const fromDomain = domainOf(mailer.fromEmail);
 
-  async function handlePasswordChange(e: React.FormEvent) {
-    e.preventDefault();
-    setMessage(null);
-
-    if (newPassword !== confirmPassword) {
-      setMessage({ type: "error", text: "New passwords do not match." });
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setMessage({
-        type: "error",
-        text: "New password must be at least 8 characters.",
-      });
-      return;
-    }
-
-    setIsChanging(true);
-
+    let siteHost: string | null = null;
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
+      siteHost = new URL(SITE_URL).host.toLowerCase().replace(/^www\./, "");
+    } catch {
+      siteHost = null;
+    }
 
-      if (error) {
-        setMessage({ type: "error", text: error.message });
-      } else {
-        setMessage({ type: "success", text: "Password updated successfully!" });
-        setNewPassword("");
-        setConfirmPassword("");
+    const isLocalOrPreview =
+      !siteHost ||
+      siteHost.startsWith("localhost") ||
+      siteHost.startsWith("127.0.0.1") ||
+      siteHost.endsWith(".vercel.app");
+
+    if (fromDomain && siteHost && !isLocalOrPreview) {
+      const aligned =
+        siteHost === fromDomain ||
+        siteHost.endsWith(`.${fromDomain}`) ||
+        fromDomain.endsWith(`.${siteHost}`);
+
+      if (!aligned) {
+        domainMismatch = `Sending from ${fromDomain} while the site is ${siteHost}. Mailbox providers treat that mismatch as a spam signal — use an address on the site's domain.`;
       }
-    } finally {
-      setIsChanging(false);
+    }
+
+    // The records that actually decide inbox placement live in DNS,
+    // where nothing in a deploy can verify them. Read them for real.
+    if (fromDomain) {
+      try {
+        authReport = await checkEmailAuth(fromDomain);
+      } catch {
+        authReport = null;
+      }
     }
   }
 
-  async function handleSignOutAll() {
-    await supabase.auth.signOut({ scope: "global" });
-    // router.replace + refresh rather than window.location.href: keeps
-    // the navigation inside Next's router (no full document reload) and
-    // refresh() clears cached Server Component data for the old session.
-    router.replace("/x-admin/login");
-    router.refresh();
+  // The lead tables are created by a SQL file the operator runs by hand,
+  // so "table does not exist" is an expected state, not an error.
+  let leads: SystemStatus["leads"] = {
+    ready: false,
+    total: null,
+    enriched: null,
+    error: null,
+  };
+
+  try {
+    const supabase = createSupabaseServiceClient();
+    const [{ count: total, error }, { count: enriched }] = await Promise.all([
+      supabase.from("leads").select("id", { count: "exact", head: true }),
+      supabase
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .eq("ai_status", "done"),
+    ]);
+
+    if (error) {
+      leads.error = error.message;
+    } else {
+      leads = { ready: true, total: total ?? 0, enriched: enriched ?? 0, error: null };
+    }
+  } catch (err) {
+    leads.error = err instanceof Error ? err.message : String(err);
   }
 
-  return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-heading font-bold text-white">Settings</h1>
-        <p className="text-zinc-400 text-sm mt-1">
-          Manage your admin account settings
-        </p>
-      </div>
+  return {
+    adminEmail,
+    adminAllowlist: getAdminEmails(),
+    siteUrl: SITE_URL,
+    mail: {
+      configured: mailer !== null,
+      host: mailer?.host ?? null,
+      port: mailer?.port ?? null,
+      secure: mailer?.secure ?? false,
+      fromEmail: mailer?.fromEmail ?? null,
+      fromName: mailer?.fromName ?? null,
+      replyTo: mailer?.replyTo ?? null,
+      contactInbox: process.env.CONTACT_EMAIL?.trim() || COMPANY.email,
+      domainMismatch,
+      auth: authReport,
+    },
+    ai: {
+      configured: Boolean(process.env.NVIDIA_API_KEY?.trim()),
+      model: process.env.NVIDIA_MODEL?.trim() || "nvidia/nemotron-3-super-120b-a12b",
+    },
+    dispatcher: { secretSet: Boolean(process.env.CRON_SECRET?.trim()) },
+    leads,
+  };
+}
 
-      {/* Change Password */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 bg-emerald-500/15 rounded-xl flex items-center justify-center">
-            <Lock className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div>
-            <h2 className="text-white font-semibold text-sm">Change Password</h2>
-            <p className="text-zinc-500 text-xs">
-              Update your admin account password
-            </p>
-          </div>
-        </div>
+export default async function SettingsPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-        {message && (
-          <div
-            className={`flex items-start gap-3 rounded-xl p-3 mb-4 ${
-              message.type === "success"
-                ? "bg-emerald-500/10 border border-emerald-500/20"
-                : "bg-red-500/10 border border-red-500/20"
-            }`}
-          >
-            {message.type === "success" ? (
-              <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-            ) : (
-              <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-            )}
-            <p
-              className={`text-sm ${message.type === "success" ? "text-emerald-400" : "text-red-400"}`}
-            >
-              {message.text}
-            </p>
-          </div>
-        )}
+  const status = await getStatus(user?.email ?? "unknown");
 
-        <form onSubmit={handlePasswordChange} className="space-y-4">
-          <div>
-            <label className="block text-zinc-300 text-sm font-medium mb-1.5">
-              New Password
-            </label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-              minLength={8}
-              placeholder="••••••••"
-              className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-            />
-          </div>
-
-          <div>
-            <label className="block text-zinc-300 text-sm font-medium mb-1.5">
-              Confirm New Password
-            </label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isChanging}
-            className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-semibold rounded-xl px-5 py-2.5 transition-colors flex items-center gap-2"
-          >
-            {isChanging ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Updating…
-              </>
-            ) : (
-              "Update Password"
-            )}
-          </button>
-        </form>
-      </div>
-
-      {/* Danger Zone */}
-      <div className="bg-zinc-900 border border-red-500/20 rounded-2xl p-6">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 bg-red-500/15 rounded-xl flex items-center justify-center">
-            <AlertTriangle className="w-4 h-4 text-red-400" />
-          </div>
-          <div>
-            <h2 className="text-white font-semibold text-sm">Danger Zone</h2>
-            <p className="text-zinc-500 text-xs">
-              Irreversible actions — proceed with care
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between bg-zinc-800 rounded-xl p-4">
-            <div>
-              <p className="text-zinc-200 text-sm font-medium">
-                Sign out all sessions
-              </p>
-              <p className="text-zinc-500 text-xs mt-0.5">
-                Log out from all devices and browsers
-              </p>
-            </div>
-            <button
-              onClick={handleSignOutAll}
-              className="bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/20 text-xs font-semibold px-4 py-2 rounded-xl transition-colors"
-            >
-              Sign Out All
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* System Info */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-        <h2 className="text-white font-semibold text-sm mb-4">System Info</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: "Admin Panel Version", value: "1.0.0" },
-            { label: "Framework", value: "Next.js 14" },
-            { label: "Database", value: "Supabase (PostgreSQL)" },
-            { label: "Auth Provider", value: "Supabase Auth" },
-          ].map((item) => (
-            <div key={item.label} className="bg-zinc-800 rounded-xl p-3">
-              <p className="text-zinc-500 text-xs mb-1">{item.label}</p>
-              <p className="text-zinc-300 text-sm font-medium">{item.value}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+  return <SettingsClient status={status} />;
 }

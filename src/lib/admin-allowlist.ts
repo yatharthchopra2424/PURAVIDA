@@ -10,10 +10,22 @@
  */
 
 export function getAdminEmails(): string[] {
-  return (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
+  const raw = (process.env.ADMIN_EMAILS ?? "")
+    .trim()
+    // A value pasted into a hosting dashboard often arrives wrapped in
+    // the quotes it had in the .env file. Left in place, the quote
+    // becomes part of the first and last address and locks the real
+    // admin out with a message that says the account is not authorised.
+    .replace(/^["']|["']$/g, "");
+
+  return (
+    raw
+      // Tolerate semicolons and newlines as separators too — both are
+      // easy to produce when editing a multi-value variable by hand.
+      .split(/[,;\n]/)
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean)
+  );
 }
 
 /**

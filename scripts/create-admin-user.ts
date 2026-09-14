@@ -56,7 +56,7 @@ function ask(question: string): Promise<string> {
 async function main() {
   console.log("\n🌿  PuraVida Admin User Setup\n");
 
-  const email = await ask("Admin email: ");
+  const email = (await ask("Admin email: ")).trim().toLowerCase();
   const password = await ask("Admin password (min 8 chars): ");
   rl.close();
 

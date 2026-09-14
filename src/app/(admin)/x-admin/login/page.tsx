@@ -64,18 +64,45 @@ export default async function AdminLoginPage({
         {notAuthorized && (
           <div
             role="alert"
-            className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6"
+            className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6"
           >
-            <ShieldAlert className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-amber-300 text-sm font-medium">
-                This account is not authorized
-              </p>
-              <p className="text-amber-400/70 text-xs mt-0.5">
-                You are signed in, but this email does not have admin access.
-                Sign in with an authorized account.
-              </p>
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-amber-300 text-sm font-medium">
+                  This account is not authorized
+                </p>
+                {/* Naming the account is the whole diagnosis: the usual
+                    cause is signing in with a different address from the
+                    one in ADMIN_EMAILS, and without this the two look
+                    identical from the outside. */}
+                {user?.email ? (
+                  <p className="text-amber-400/70 text-xs mt-0.5 break-all">
+                    You are signed in as <strong>{user.email}</strong>, which is
+                    not on the admin list. Sign out and use an authorized
+                    account, or add this address to ADMIN_EMAILS.
+                  </p>
+                ) : (
+                  <p className="text-amber-400/70 text-xs mt-0.5">
+                    You are signed in, but this email does not have admin
+                    access. Sign in with an authorized account.
+                  </p>
+                )}
+              </div>
             </div>
+
+            {/* Without this the page is a dead end: the form below just
+                re-authenticates the same unauthorized session. */}
+            {user && (
+              <form action="/x-admin/logout" method="post" className="mt-3 pl-7">
+                <button
+                  type="submit"
+                  className="text-xs font-medium text-amber-300 underline underline-offset-2 hover:text-amber-200"
+                >
+                  Sign out
+                </button>
+              </form>
+            )}
           </div>
         )}
 
