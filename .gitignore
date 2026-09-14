@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Lead-generation source data and extracts.
+# Both hold hundreds of named people's direct emails and mobile numbers.
+# The PDF also must never sit in /public — anything there is served at a
+# public URL and would be downloadable from the live site.
+/docs/catalogues/
+/scripts/leads/out/
+
+# Env backups made during migrations — real secrets, never commit.
+.env*.bak*
+.env.backup*

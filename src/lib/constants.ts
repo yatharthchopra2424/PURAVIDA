@@ -45,9 +45,38 @@ export const COMPANY = {
   // Google too, not just visitors.
   tagline: "Cured by Nature. Perfected by Science.",
   phone: "+91-9811647596",
-  email: "rk@puravida.org.in",
-  salesEmail: "sales@puravidanatural.com",
+  // The single company address, on the live domain. It was previously
+  // split across two others — rk@puravida.org.in and
+  // sales@puravidanatural.com — neither of which matches the site
+  // (www.puravidanaturalindia.com). That mismatch reached the footer,
+  // the contact page and the Organization structured data, so Google
+  // and every visitor were given a contact on a domain the site does
+  // not own. It is also the mailbox outbound email authenticates as,
+  // and a From: domain that disagrees with the site's is a spam signal.
+  email: "rk@puravidanaturalindia.com",
+  // Kept as a distinct field so a real sales@ alias can be split out
+  // later without touching every call site; same mailbox for now.
+  salesEmail: "rk@puravidanaturalindia.com",
   address: "169, Uttam Nagar West, New Delhi - 110059, India",
+
+  // ── Email signature ────────────────────────────────────────
+  // Transcribed from the signature already used in Outlook, so mail the
+  // app sends matches mail sent by hand. `name` stays the short brand
+  // used across the site; `legalName` is what belongs at the bottom of
+  // business correspondence.
+  legalName: "Pura Vida Natural LLP",
+  signerName: "R. Kumar",
+  website: "https://www.puravidanaturalindia.com/",
+  /** Every mailbox that reaches the team, listed in the sign-off. */
+  contactEmails: [
+    "rk@puravidanaturalindia.com",
+    "ps@puravidanaturalindia.com",
+    "exports@puravidanaturalindia.com",
+  ],
+  featuredProduct: {
+    pitch: "Try our Advanced Digestive Fibre Blend.",
+    url: "https://amzn.in/d/09imCeph",
+  },
   gst: "07ABCFP5743NIZS",
   // iec: add the real Import-Export Code here when available.
   established: "2000",

@@ -6,20 +6,17 @@ import {
   renderAdminNotificationEmail,
   renderCustomerConfirmationEmail,
 } from "@/lib/email-templates";
+import { isMailerConfigured, sendMail, closeTransport } from "@/lib/mailer";
+import { COMPANY } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
-
-/** Strips CR/LF so user input can never inject extra email headers. */
-function sanitizeHeaderValue(value: string): string {
-  return value.replace(/[\r\n]+/g, " ").trim();
-}
 
 export async function POST(req: NextRequest) {
   try {
     // ── 1 · Throttle before doing any work ────────────────────
     // This endpoint writes to the database with the service-role
-    // client and sends email via Resend. Unthrottled, a trivial
-    // script can fill the inbox and burn the email quota.
+    // client and opens an SMTP connection. Unthrottled, a trivial
+    // script can fill the inbox and get the mailbox rate-limited.
     const ip = getClientIp(req.headers);
     const rate = await checkRateLimit(ip);
 
@@ -91,73 +88,70 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 5 · Email ─────────────────────────────────────────────
-    const resendApiKey = process.env.RESEND_API_KEY;
-    const recipientEmail =
-      process.env.CONTACT_EMAIL || "ps@puravidanaturalindia.com";
-
-    // NOTE: `from` must be a verified domain in Resend. The sandbox
-    // sender onboarding@resend.dev can only deliver to the Resend
-    // account's own address — it CANNOT reach arbitrary customers, so
-    // the confirmation email below will silently fail until a real
-    // domain is verified. See ADD-SEARCH-CONSOLE.md / README for the
-    // one-time setup.
-    const fromAddress =
-      process.env.RESEND_FROM || "PuraVida Quotes <onboarding@resend.dev>";
-
+    // Sent over the company's own SMTP mailbox, the same transport the
+    // outbound campaigns use. No third-party sending API is involved,
+    // so there is no verified-sender sandbox to fall foul of and no
+    // provider quota between a customer and their confirmation.
+    const recipientEmail = process.env.CONTACT_EMAIL?.trim() || COMPANY.email;
     const emailData = { name, email, product, quantity, description, cartItems };
 
     let emailed = false;
     let confirmed = false;
-    if (resendApiKey) {
-      try {
-        const { Resend } = await import("resend");
-        const resend = new Resend(resendApiKey);
 
-        const admin = renderAdminNotificationEmail(emailData);
-        await resend.emails.send({
-          from: fromAddress,
+    if (isMailerConfigured()) {
+      const admin = renderAdminNotificationEmail(emailData);
+      const confirmation = renderCustomerConfirmationEmail(emailData);
+
+      // Both messages go out together. The customer is waiting on this
+      // response, and sending in series would add a whole SMTP
+      // round-trip to their page load for no benefit.
+      const [adminResult, customerResult] = await Promise.allSettled([
+        sendMail({
           to: recipientEmail,
-          replyTo: email,
-          subject: sanitizeHeaderValue(admin.subject),
+          subject: admin.subject,
           html: admin.html,
           text: admin.text,
-        });
-        emailed = true;
-      } catch (emailError) {
-        console.error("[contact] Admin notification send failed", emailError);
-      }
-
-      try {
-        const { Resend } = await import("resend");
-        const resend = new Resend(resendApiKey);
-
-        const confirmation = renderCustomerConfirmationEmail(emailData);
-        await resend.emails.send({
-          from: fromAddress,
+          // Hitting reply in the team inbox answers the customer directly.
+          replyTo: email,
+        }),
+        sendMail({
           to: email,
-          replyTo: recipientEmail,
-          subject: sanitizeHeaderValue(confirmation.subject),
+          toName: name,
+          subject: confirmation.subject,
           html: confirmation.html,
           text: confirmation.text,
-        });
-        confirmed = true;
-      } catch (emailError) {
-        // Best-effort: the lead is already captured above, so a failed
-        // confirmation email should not turn into a 500 for the customer.
-        console.error("[contact] Customer confirmation send failed", emailError);
+          replyTo: recipientEmail,
+        }),
+      ]);
+
+      emailed = adminResult.status === "fulfilled";
+      confirmed = customerResult.status === "fulfilled";
+
+      if (adminResult.status === "rejected") {
+        console.error("[contact] Admin notification send failed", adminResult.reason);
       }
+      if (customerResult.status === "rejected") {
+        // Best-effort: the lead is already captured above, so a failed
+        // confirmation must not become a 500 for the customer.
+        console.error("[contact] Customer confirmation send failed", customerResult.reason);
+      }
+
+      // Serverless instances are frozen between invocations; an idle
+      // pooled socket left open is one the next request cannot reuse
+      // anyway, and it keeps the instance from shutting down cleanly.
+      closeTransport();
     } else {
-      console.log("─── NEW QUOTE INQUIRY (Resend not configured) ───");
+      console.log("─── NEW QUOTE INQUIRY (SMTP not configured) ───");
       console.log(renderAdminNotificationEmail(emailData).text);
-      console.log("─────────────────────────────────────────────────");
+      console.log("───────────────────────────────────────────────");
     }
 
-    // Only report success if the enquiry was captured somewhere. If
-    // both the database and the admin notification failed, the lead is
+    // Only report success if the enquiry was captured somewhere. If both
+    // the database and the admin notification failed, the lead is
     // genuinely lost and the user must be told rather than shown a
-    // thank-you screen. A failed *confirmation* email doesn't count —
-    // the lead itself is still safely captured.
-    if (!persisted && !emailed && resendApiKey) {
+    // thank-you screen. A failed *confirmation* does not count — the
+    // lead itself is still safely captured.
+    if (!persisted && !emailed && isMailerConfigured()) {
       return NextResponse.json(
         {
           error:

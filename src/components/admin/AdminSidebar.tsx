@@ -8,6 +8,8 @@ import {
   Package,
   Tag,
   MessageSquare,
+  Users,
+  Mail,
   Settings,
   LogOut,
   ChevronLeft,
@@ -29,6 +31,8 @@ const navItems: NavItem[] = [
   { label: "Products", href: "/x-admin/products", icon: Package },
   { label: "Categories", href: "/x-admin/categories", icon: Tag },
   { label: "Inquiries", href: "/x-admin/inquiries", icon: MessageSquare },
+  { label: "Leads", href: "/x-admin/leads", icon: Users },
+  { label: "Campaigns", href: "/x-admin/campaigns", icon: Mail },
   { label: "Settings", href: "/x-admin/settings", icon: Settings },
 ];
 
