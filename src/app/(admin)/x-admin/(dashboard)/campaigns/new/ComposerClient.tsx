@@ -77,7 +77,11 @@ interface Props {
 }
 
 const STARTER_BODY = [
-  "<p>Hi {{first_name}},</p>",
+  // "Dear <full name>" — the greeting Indian B2B correspondence
+  // actually uses. {{full_name}} is the cleaned first+last name, and
+  // falls back to "Sir/Madam" for the nine catalogue records that
+  // carry no contact name at all.
+  "<p>Dear {{full_name}},</p>",
   "<p>{{icebreaker}}</p>",
   "<p>I'm with PuraVida Natural — we manufacture and export standardised " +
     "botanical extracts, essential oils, oleoresins and fruit powders from " +

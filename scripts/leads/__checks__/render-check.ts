@@ -5,7 +5,12 @@
  *
  *   npx tsx scripts/leads/__checks__/render-check.ts
  */
-import { renderCampaignEmail, unknownTokens, tidyCompanyName } from "../../../src/lib/campaign-render";
+import {
+  renderCampaignEmail,
+  unknownTokens,
+  tidyCompanyName,
+  tidyPersonName,
+} from "../../../src/lib/campaign-render";
 import type { Lead } from "../../../src/lib/leads";
 
 const lead = {
@@ -27,7 +32,7 @@ const lead = {
   suggested_products: ["Ashwagandha Extract", "Curcumin 95% Extract"],
 } as unknown as Lead;
 
-const body = `<p>Hi {{first_name}},</p><p>{{icebreaker}}</p>
+const body = `<p>Dear {{full_name}},</p><p>{{icebreaker}}</p>
 <p>For {{company}} the fit is {{products}}.</p>
 <p><a href="https://www.puravidanaturalindia.com/products">Catalogue</a>
    <a href="https://evil.example/phish">Elsewhere</a>
@@ -51,7 +56,7 @@ const tracked = renderCampaignEmail({ ...options, tracking: true });
 
 const checks: [string, boolean][] = [
   ["subject merged", out.subject === "Botanical extracts for Amtec Health Care Pvt. Ltd."],
-  ["first name merged", out.html.includes("Hi Geeta,")],
+  ["greeting uses full name", out.html.includes("Dear Geeta Seshadri,")],
   ["company title-cased", tidyCompanyName(lead.company_name) === "Amtec Health Care Pvt. Ltd."],
   ["products merged", out.html.includes("Ashwagandha Extract, Curcumin 95% Extract")],
   ["merged HTML escaped", out.html.includes("&lt;b&gt;CIS&lt;/b&gt;") && !out.html.includes("<b>CIS</b>")],
@@ -66,13 +71,26 @@ const checks: [string, boolean][] = [
   ["mailto left alone", out.html.includes('href="mailto:rk@puravidanaturalindia.com"')],
   ["unknown token untouched", out.html.includes("{{nope}}")],
   ["unknown token reported", unknownTokens(body).includes("nope")],
-  ["text alternative built", out.text.includes("Hi Geeta,")],
+  ["text alternative built", out.text.includes("Dear Geeta Seshadri,")],
   ["text carries the signature", out.text.includes("Pura Vida Natural LLP")],
   // The text alternative merges unescaped and then strips markup, so
   // the icebreaker's own tags must not survive into it either.
   ["text strips markup", out.text.includes("Your CIS distribution") && !out.text.includes("<b>")],
   ["off-domain link left untracked", out.html.includes('href="https://evil.example/phish"')],
 ];
+
+// Greeting names come straight out of a third-party PDF, in whatever
+// shape the exhibitor typed them. Anything odd here lands at the very
+// top of a cold email, where it is most obviously a mail merge.
+for (const [input, want] of [
+  ["Bhavik.Parikh", "Bhavik Parikh"],
+  ["ANIL JAIN", "Anil Jain"],
+  ["  geeta   seshadri ", "Geeta Seshadri"],
+  ["R. Kumar", "R. Kumar"],
+  ["McBride", "McBride"],
+] as const) {
+  checks.push([`name tidied: ${input.trim()}`, tidyPersonName(input) === want]);
+}
 
 let failed = 0;
 for (const [name, ok] of checks) {
