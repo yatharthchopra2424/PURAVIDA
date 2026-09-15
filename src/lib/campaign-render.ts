@@ -26,7 +26,11 @@ export interface MergeField {
 /** Shown as insertable chips in the composer. */
 export const MERGE_FIELDS: MergeField[] = [
   { token: "first_name", label: "First name", description: "Geeta" },
-  { token: "full_name", label: "Full name", description: "Geeta Seshadri" },
+  {
+    token: "full_name",
+    label: "Full name",
+    description: "Geeta Seshadri — use after \"Dear\"",
+  },
   { token: "salutation_name", label: "Ms. Surname", description: "Ms. Seshadri" },
   { token: "company", label: "Company", description: "Amtec Health Care Pvt. Ltd." },
   { token: "designation", label: "Designation", description: "Director" },
@@ -107,11 +111,45 @@ export function tidyCompanyName(name: string): string {
   );
 }
 
+/**
+ * Cleans a contact name up to something safe to put after "Dear".
+ *
+ * The catalogue supplies names in whatever shape the exhibitor typed
+ * into the form: "Bhavik.Parikh" with no space, "ANIL JAIN" shouting,
+ * double spaces. Any of those in a greeting reads as a mail merge,
+ * which is precisely the impression this email is trying not to give.
+ */
+export function tidyPersonName(raw: string | null | undefined): string | null {
+  const name = raw?.replace(/\s+/g, " ").trim();
+  if (!name) return null;
+
+  const parts = name
+    // A dot between letters is a missing space, not an initial:
+    // "Bhavik.Parikh" -> two words, while "R. Kumar" is left alone.
+    .replace(/(?<=[a-z])\.(?=[A-Za-z])/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (parts.length === 0) return null;
+
+  return parts
+    .map((part) => {
+      const letters = part.replace(/[^A-Za-z]/g, "");
+      // Leave genuinely mixed case alone — "McBride" and "D'Souza" are
+      // already right, and re-casing them would be the visible error.
+      // All-caps and all-lower both need fixing: "ANIL" and "geeta"
+      // look equally like a mail merge at the top of a letter.
+      const isShouting = letters && letters === letters.toUpperCase();
+      const isWhispering = letters && letters === letters.toLowerCase();
+      if (!isShouting && !isWhispering) return part;
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
 function firstName(lead: Pick<Lead, "contact_name">): string {
-  const name = lead.contact_name?.trim();
-  if (!name) return "there";
-  // "Bhavik.Parikh" is a real value in the source data.
-  return name.split(/[\s.]+/).filter(Boolean)[0] ?? "there";
+  const full = tidyPersonName(lead.contact_name);
+  return full?.split(" ")[0] ?? "there";
 }
 
 export interface MergeContext {
@@ -119,23 +157,45 @@ export interface MergeContext {
   senderName: string;
 }
 
+/**
+ * What PuraVida sells, for the rare lead with no AI suggestions.
+ *
+ * Without it, "the lines most likely to be relevant are {{products}}."
+ * renders as a sentence ending in a bare full stop — which is how the
+ * first live test went out. A merge field that can be empty needs a
+ * fallback that still reads as a sentence.
+ */
+const PRODUCT_FALLBACK =
+  "our standardised herbal extracts, essential oils and oleoresins";
+
 /** Raw (unescaped) merge values, so the text alternative can reuse them. */
 export function mergeValues({ lead, senderName }: MergeContext): Record<string, string> {
-  const company = tidyCompanyName(lead.company_name);
-  const surname = lead.contact_name?.trim().split(/\s+/).slice(-1)[0] ?? "";
+  const fullName = tidyPersonName(lead.contact_name);
+  const surname = fullName?.split(" ").slice(-1)[0] ?? "";
+
+  // A manual recipient has no lead behind it, so `company_name` was
+  // filled with their own name. Addressing someone as though their name
+  // were their employer reads worse than saying nothing specific.
+  const rawCompany = lead.company_name?.trim();
+  const company =
+    !rawCompany || (fullName && rawCompany.toLowerCase() === fullName.toLowerCase())
+      ? "your company"
+      : tidyCompanyName(rawCompany);
 
   return {
     first_name: firstName(lead),
-    full_name: lead.contact_name?.trim() || "there",
+    // "Dear Sir/Madam" rather than "Dear there" when the catalogue gave
+    // no contact name — nine of the 642 records have none.
+    full_name: fullName ?? "Sir/Madam",
     salutation_name:
-      lead.salutation && surname ? `${lead.salutation} ${surname}` : firstName(lead),
+      lead.salutation && surname ? `${lead.salutation} ${surname}` : (fullName ?? "Sir/Madam"),
     company,
     designation: lead.designation?.trim() || "",
     city: lead.city_verified ?? lead.city ?? "",
     country: lead.country_verified ?? lead.country ?? "",
     segment: lead.segment ?? "",
     icebreaker: lead.icebreaker?.trim() || "",
-    products: (lead.suggested_products ?? []).join(", "),
+    products: (lead.suggested_products ?? []).join(", ") || PRODUCT_FALLBACK,
     sender_name: senderName,
     sender_company: COMPANY.name,
   };
