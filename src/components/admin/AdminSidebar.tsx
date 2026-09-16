@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Users,
   Mail,
+  FileText,
   Settings,
   LogOut,
   ChevronLeft,
@@ -33,6 +34,7 @@ const navItems: NavItem[] = [
   { label: "Inquiries", href: "/x-admin/inquiries", icon: MessageSquare },
   { label: "Leads", href: "/x-admin/leads", icon: Users },
   { label: "Campaigns", href: "/x-admin/campaigns", icon: Mail },
+  { label: "Saved emails", href: "/x-admin/templates", icon: FileText },
   { label: "Settings", href: "/x-admin/settings", icon: Settings },
 ];
 

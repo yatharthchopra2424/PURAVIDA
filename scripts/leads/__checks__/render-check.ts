@@ -88,8 +88,12 @@ for (const [input, want] of [
   ["  geeta   seshadri ", "Geeta Seshadri"],
   ["R. Kumar", "R. Kumar"],
   ["McBride", "McBride"],
+  // Real catalogue data: a phone number typed into the name field.
+  ["9812777777", null],
+  ["+91 99988 15567", null],
 ] as const) {
   checks.push([`name tidied: ${input.trim()}`, tidyPersonName(input) === want]);
+  // (null means "not a name" — the greeting falls back to Sir/Madam)
 }
 
 let failed = 0;

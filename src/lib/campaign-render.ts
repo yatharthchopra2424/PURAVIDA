@@ -123,6 +123,11 @@ export function tidyPersonName(raw: string | null | undefined): string | null {
   const name = raw?.replace(/\s+/g, " ").trim();
   if (!name) return null;
 
+  // Three exhibitors typed a phone number into the name field, which
+  // rendered as "Dear 9812777777,". Something with no letters in it is
+  // not a name; treating it as missing gives "Dear Sir/Madam" instead.
+  if (!/[A-Za-z]{2,}/.test(name)) return null;
+
   const parts = name
     // A dot between letters is a missing space, not an initial:
     // "Bhavik.Parikh" -> two words, while "R. Kumar" is left alone.
