@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { SELECTION_STORAGE_KEY } from "../../leads/LeadsClient";
+import { PENDING_TEMPLATE_KEY } from "@/lib/templates";
 
 /**
  * A compose window, not a settings form.
@@ -111,6 +112,14 @@ export default function ComposerClient({
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState(STARTER_BODY);
+  // The editor is uncontrolled, so loading a saved email into it means
+  // remounting it with new initial content; `key` forces exactly that.
+  const [editorSeed, setEditorSeed] = useState({ key: "starter", html: STARTER_BODY });
+  // Set once this draft exists in Saved emails, so saving again updates
+  // it rather than piling up copies.
+  const [templateId, setTemplateId] = useState<string | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftNotice, setDraftNotice] = useState<string | null>(null);
   const [senderName, setSenderName] = useState(defaultSenderName);
   const [batchSize, setBatchSize] = useState(8);
   const [includeSignature, setIncludeSignature] = useState(true);
@@ -223,7 +232,64 @@ export default function ComposerClient({
     if (!template) return;
     setSubject(template.subject);
     setBody(template.body_html);
-    if (!name) setName(template.name);
+    setEditorSeed({ key: `${template.id}-${Date.now()}`, html: template.body_html });
+    setTemplateId(template.id);
+    setName((current) => current || template.name);
+  }
+
+  // A saved email chosen on the Saved emails page arrives here via
+  // session storage. Applied after mount, not during render: storage
+  // does not exist on the server, and reading it while rendering would
+  // make the server and browser disagree about the editor's contents.
+  useEffect(() => {
+    const pending = sessionStorage.getItem(PENDING_TEMPLATE_KEY);
+    if (!pending) return;
+    sessionStorage.removeItem(PENDING_TEMPLATE_KEY);
+    void Promise.resolve().then(() => applyTemplate(pending));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * "Save as draft" keeps the email itself for reuse — name, subject and
+   * body — in Saved emails. It does not need recipients, and pressing it
+   * again on the same draft updates that one entry.
+   */
+  async function saveDraft() {
+    if (!body.replace(/<[^>]+>/g, "").trim()) {
+      setError("Write something before saving.");
+      return;
+    }
+    setSavingDraft(true);
+    setError(null);
+    setDraftNotice(null);
+
+    const payload = {
+      name: name.trim() || subject.trim() || "Untitled email",
+      subject: subject.trim(),
+      bodyHtml: body,
+    };
+
+    try {
+      const res = await fetch(
+        templateId ? `/api/admin/templates/${templateId}` : "/api/admin/templates",
+        {
+          method: templateId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Could not save");
+      setTemplateId(json.data.id);
+      if (!name.trim()) setName(payload.name);
+      setDraftNotice(
+        `Saved as "${payload.name}" — find it any time under Saved emails.`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSavingDraft(false);
+    }
   }
 
   async function uploadFile(file: File) {
@@ -565,7 +631,8 @@ export default function ComposerClient({
 
         {/* Body */}
         <RichTextEditor
-          initialHtml={STARTER_BODY}
+          key={editorSeed.key}
+          initialHtml={editorSeed.html}
           onChange={setBody}
           placeholder="Write your message…"
         />
@@ -702,12 +769,16 @@ export default function ComposerClient({
         </button>
 
         <button
-          onClick={() => submit(false)}
-          disabled={submitting || rows.length === 0}
+          onClick={saveDraft}
+          disabled={savingDraft}
           className="flex items-center gap-2 rounded-xl bg-zinc-800 px-3 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-700 disabled:opacity-50"
         >
-          <Save className="h-4 w-4" />
-          Save as draft
+          {savingDraft ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
+          {templateId ? "Update draft" : "Save as draft"}
         </button>
 
         <div className="flex flex-1 items-center gap-2">
@@ -786,7 +857,7 @@ export default function ComposerClient({
           </Field>
 
           {templates.length > 0 && (
-            <Field label="Start from a template">
+            <Field label="Start from a saved email">
               <select
                 defaultValue=""
                 onChange={(e) => applyTemplate(e.target.value)}
@@ -813,6 +884,14 @@ export default function ComposerClient({
         <Notice tone="amber">
           Unknown fields will be sent as literal text:{" "}
           <strong>{unknownTokens.map((t) => `{{${t}}}`).join(", ")}</strong>
+        </Notice>
+      )}
+      {draftNotice && (
+        <Notice tone="emerald">
+          {draftNotice}{" "}
+          <Link href="/x-admin/templates" className="font-semibold underline">
+            Open Saved emails
+          </Link>
         </Notice>
       )}
       {error && <Notice tone="red">{error}</Notice>}

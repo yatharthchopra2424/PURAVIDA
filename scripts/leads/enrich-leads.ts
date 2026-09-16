@@ -30,6 +30,7 @@
 import OpenAI from "openai";
 import { loadEnv, parseArgs, requireEnv, serviceClient } from "./_env";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { snapAll } from "./product-match";
 
 // ── Controlled vocabularies ──────────────────────────────────
 // Imported from the app rather than redeclared: the admin panel filters
@@ -267,25 +268,32 @@ Representative products: Ashwagandha Extract, Curcumin 95% Extract, Green Tea Ex
  * product table changes. Falls back to a static list rather than
  * failing the whole run.
  */
-async function loadCatalogue(supabase: SupabaseClient): Promise<string> {
+async function loadCatalogue(
+  supabase: SupabaseClient
+): Promise<{ prompt: string; productNames: string[] }> {
   const [{ data: categories }, { data: products }] = await Promise.all([
     // The table is `product_categories`, not `categories` — the latter
     // does not exist, so querying it returned no rows and silently fell
     // back to the static summary below, scoring every lead against a
     // hardcoded list instead of the live 256-product catalogue.
     supabase.from("product_categories").select("name").order("name"),
-    supabase.from("products").select("name").order("popularity", { ascending: false }).limit(120),
+    // The whole catalogue, not the top 120: a product the model never
+    // sees is a product it can never suggest, however well it fits.
+    supabase.from("products").select("name").order("popularity", { ascending: false }).limit(1000),
   ]);
 
   if (!categories?.length || !products?.length) {
     console.log("  (using the built-in catalogue summary — product tables unreadable)");
-    return FALLBACK_CATALOGUE;
+    return { prompt: FALLBACK_CATALOGUE, productNames: [] };
   }
 
-  return [
-    `Categories: ${categories.map((c) => c.name).join(", ")}.`,
-    `Products (${products.length}): ${products.map((p) => p.name).join(", ")}.`,
-  ].join("\n");
+  return {
+    prompt: [
+      `Categories: ${categories.map((c) => c.name).join(", ")}.`,
+      `Products (${products.length}): ${products.map((p) => p.name).join(", ")}.`,
+    ].join("\n"),
+    productNames: products.map((p) => p.name as string),
+  };
 }
 
 // ── Runner ───────────────────────────────────────────────────
@@ -396,7 +404,8 @@ async function main() {
     console.log(`\n  Re-queued ${count ?? 0} leads (${target.join(", ")}).`);
   }
 
-  const systemPrompt = buildSystemPrompt(await loadCatalogue(supabase));
+  const catalogue = await loadCatalogue(supabase);
+  const systemPrompt = buildSystemPrompt(catalogue.prompt);
   const client = new OpenAI({ apiKey, baseURL });
 
   const { data: pending, error } = await supabase
@@ -472,7 +481,12 @@ async function main() {
             ai_summary: result.ai_summary,
             pitch_angle: result.pitch_angle,
             icebreaker: result.icebreaker,
-            suggested_products: result.suggested_products,
+            // Only names the website actually lists. The model is asked
+            // to copy verbatim and usually does; the rest are snapped to
+            // the closest real product or dropped.
+            suggested_products: catalogue.productNames.length
+              ? snapAll(result.suggested_products, catalogue.productNames)
+              : result.suggested_products,
             data_flags: [...flags].slice(0, 6),
             city_verified: result.city,
             state_verified: result.state,

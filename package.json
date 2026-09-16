@@ -17,7 +17,9 @@
     "mail:verify": "tsx scripts/check-mail.ts",
     "admin:check": "tsx scripts/check-admin-access.ts",
     "admin:data": "tsx scripts/check-admin-data.ts",
-    "mail:diagnose": "tsx scripts/diagnose-mail.ts"
+    "mail:diagnose": "tsx scripts/diagnose-mail.ts",
+    "leads:repair-products": "tsx scripts/leads/repair-products.ts",
+    "verify": "tsx scripts/verify-system.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",

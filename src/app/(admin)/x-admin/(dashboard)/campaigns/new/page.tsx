@@ -17,7 +17,7 @@ export default async function NewCampaignPage() {
       .from("email_templates")
       .select("id, name, subject, body_html")
       .order("updated_at", { ascending: false })
-      .limit(25),
+      .limit(200),
     auth.auth.getUser(),
   ]);
 

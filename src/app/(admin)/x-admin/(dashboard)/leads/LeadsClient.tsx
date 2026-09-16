@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { PENDING_TEMPLATE_KEY } from "@/lib/templates";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -176,6 +184,15 @@ export default function LeadsClient({
     setSelectAllMatching(false);
   }
 
+  // Whether a saved email is waiting to be sent. Read through
+  // useSyncExternalStore so the server render (no session storage) and
+  // the first browser render agree, instead of flashing a banner in.
+  const hasPendingTemplate = useSyncExternalStore(
+    () => () => {},
+    () => sessionStorage.getItem(PENDING_TEMPLATE_KEY) !== null,
+    () => false
+  );
+
   const selectionCount = selectAllMatching ? total : selected.size;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const allOnPageSelected = leads.length > 0 && leads.every((l) => selected.has(l.id));
@@ -281,6 +298,13 @@ export default function LeadsClient({
           </button>
         </div>
       </div>
+
+      {hasPendingTemplate && (
+        <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-200">
+          Your saved email is ready. Tick the people who should receive it,
+          then press <strong>Email</strong> — it opens already written.
+        </div>
+      )}
 
       {/* Search + filter toggle */}
       <div className="flex flex-wrap items-center gap-2">
