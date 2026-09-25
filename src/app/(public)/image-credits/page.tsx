@@ -13,10 +13,10 @@ export const metadata: Metadata = {
 
 type AttributionEntry = {
   productName: string;
-  commonsTitle: string;
-  sourceUrl: string;
-  license: string;
-  artist: string;
+  commonsTitle?: string;
+  sourceUrl?: string;
+  license?: string;
+  artist?: string;
   /** Where the photo came from (commons, openverse, pexels, pixabay); set by the image agent. */
   source?: string;
   /** Set when this product uses a related product's photo as a representative image. */
@@ -95,19 +95,23 @@ export default function ImageCreditsPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <a
-                        href={entry.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-emerald underline underline-offset-2 hover:text-emerald-700"
-                      >
-                        {entry.commonsTitle.replace(/^File:/, "")}
-                      </a>
+                      {entry.sourceUrl && entry.commonsTitle ? (
+                        <a
+                          href={entry.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-emerald underline underline-offset-2 hover:text-emerald-700"
+                        >
+                          {entry.commonsTitle.replace(/^File:/, "")}
+                        </a>
+                      ) : (
+                        <span className="text-gray-500">PuraVida Natural</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
                       {entry.artist || "—"}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{entry.license}</td>
+                    <td className="px-4 py-3 text-gray-600">{entry.license || "—"}</td>
                   </tr>
                 ))}
               </tbody>
