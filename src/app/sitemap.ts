@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { fetchCatalogSnapshot } from "@/lib/catalog";
 import { absoluteUrl } from "@/lib/site";
+import { GUIDES } from "@/data/guides";
 import type { Category, Product } from "@/types";
 
 // Regenerate hourly rather than pinning the catalog at build time.
@@ -18,6 +19,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/industry"), lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: absoluteUrl("/products"), lastModified: now, changeFrequency: "weekly", priority: 0.9 },
     { url: absoluteUrl("/contact"), lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: absoluteUrl("/guides"), lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    ...GUIDES.map((g) => ({
+      url: absoluteUrl(`/guides/${g.slug}`),
+      lastModified: new Date(g.published),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
+    { url: absoluteUrl("/encapsulated-oleoresins"), lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: absoluteUrl("/selvasoul-digestive-fiber-blend"), lastModified: now, changeFrequency: "monthly", priority: 0.8 },
   ];
 
   // The Supabase project pauses when idle (hence the keepalive cron).

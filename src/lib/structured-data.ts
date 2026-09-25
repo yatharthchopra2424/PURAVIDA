@@ -23,6 +23,17 @@ export function organizationSchema() {
     "@type": "Organization",
     "@id": ORGANIZATION_ID,
     name: COMPANY.name,
+    // Registration identifiers let search and AI engines tie this site to
+    // the same business in government registers (all verified against the
+    // certificates in private-docs/legal/).
+    legalName: COMPANY.legalName,
+    taxID: COMPANY.gst,
+    identifier: [
+      { "@type": "PropertyValue", propertyID: "GSTIN", value: COMPANY.gst },
+      { "@type": "PropertyValue", propertyID: "FSSAI licence", value: COMPANY.fssaiLicense },
+      { "@type": "PropertyValue", propertyID: "Udyam registration", value: COMPANY.udyam },
+    ],
+    brand: [{ "@type": "Brand", name: "Selvasoul" }],
     url: absoluteUrl("/"),
     logo: {
       "@type": "ImageObject",
@@ -30,9 +41,10 @@ export function organizationSchema() {
     },
     image: absoluteUrl("/opengraph-image"),
     description:
-      "Manufacturer and global exporter of premium herbal extracts, essential oils, oleoresins and nutraceutical ingredients. ISO 9001:2015, GMP and FSSAI certified.",
+      "Supplier and exporter of standardised herbal extracts, essential oils, oleoresins and nutraceutical ingredients from New Delhi, India. FSSAI licensed; Halal India certified product range.",
     slogan: COMPANY.tagline,
-    foundingDate: COMPANY.established,
+    // The LLP's registration date (Udyam certificate), not team experience.
+    foundingDate: COMPANY.llpRegistered,
     email: COMPANY.email,
     telephone: COMPANY.phone,
     address: {
@@ -50,21 +62,16 @@ export function organizationSchema() {
       areaServed: "Worldwide",
       availableLanguage: ["en"],
     },
-    identifier: [
-      {
-        "@type": "PropertyValue",
-        name: "GST",
-        value: COMPANY.gst,
-      },
-    ],
+    // Only credentials a document exists for (private-docs/legal/). ISO and
+    // GMP were listed here without one; add them back with the certificate.
     hasCredential: [
-      "ISO 9001:2015",
-      "GMP",
-      "FSSAI",
+      { name: "FSSAI State Licence", id: COMPANY.fssaiLicense },
+      { name: "Halal India certification", id: "HIW28020819" },
     ].map((c) => ({
       "@type": "EducationalOccupationalCredential",
       credentialCategory: "certification",
-      name: c,
+      name: c.name,
+      identifier: c.id,
     })),
   };
 }

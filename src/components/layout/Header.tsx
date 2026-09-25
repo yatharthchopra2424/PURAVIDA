@@ -20,6 +20,8 @@ export function Header() {
   const openSearch = useSearchStore((s) => s.open);
   const toggleMobileNav = useUIStore((s) => s.toggleMobileNav);
   const cartItems = useCartStore((s) => s.items);
+  const openQuote = useCartStore((s) => s.open);
+  const lastAddedAt = useCartStore((s) => s.lastAddedAt);
 
   const isHomePage = pathname === '/';
   
@@ -83,7 +85,7 @@ export function Header() {
         ? "bg-white border-b border-gray-200 shadow-sm"
         : "bg-[rgba(6,44,29,0.72)] border-b border-white/10"
     )}>
-      <div className="w-full flex items-center justify-between gap-4 px-6 sm:px-10 lg:px-14 py-[15px] lg:py-1">
+      <div className="w-full flex items-center justify-between gap-2 px-4 sm:gap-4 sm:px-10 lg:px-14 py-[15px] lg:py-1">
         {/* Logo.
             Which asset to show follows the NAV STYLE, not the
             home-scrolled state. Keying it to `useScrolledHomeWhiteLogo`
@@ -93,14 +95,18 @@ export function Header() {
         <Link
           href="/"
           className={cn(
-            "flex-shrink-0",
-            useLightStyle ? "my-0 ml-2" : "-my-4"
+            // min-w-0 lets the logo give way on narrow phones instead of
+            // pushing the menu button off-screen.
+            "min-w-0 flex-shrink",
+            useLightStyle ? "my-0 sm:ml-2" : "-my-4"
           )}
         >
           <div
             className={cn(
               "relative",
-              useLightStyle ? "h-[76px] w-56" : "h-[115px] w-80"
+              useLightStyle
+                ? "h-[60px] w-40 sm:h-[76px] sm:w-56"
+                : "h-[84px] w-52 sm:h-[115px] sm:w-80"
             )}
           >
             <Image
@@ -187,12 +193,13 @@ export function Header() {
           <button
             onClick={openSearch}
             className={cn(
-              "flex h-11 items-center gap-1.5 rounded-lg border px-4 text-base font-medium not-italic normal-case leading-[21px] tracking-normal transition-colors whitespace-nowrap",
+              "flex h-11 min-w-[2.75rem] items-center justify-center gap-1.5 rounded-lg border px-3 sm:px-4 text-base font-medium not-italic normal-case leading-[21px] tracking-normal transition-colors whitespace-nowrap",
               useLightStyle
                 ? "border-gray-300 text-gray-600 hover:border-amber-500 hover:text-amber-600 hover:bg-amber-50"
                 : "border-white/30 text-white hover:border-white/50 hover:text-white hover:bg-white/10"
             )}
             title="Search products (Ctrl+K)"
+            aria-label="Search products"
           >
             <Search className="h-3.5 w-3.5" />
             <span className="hidden xl:inline">Search...</span>
@@ -206,20 +213,25 @@ export function Header() {
 
           {/* Quote Cart */}
           {cartItems.length > 0 && (
-            <Link
-              href="/contact"
+            <button
+              type="button"
+              onClick={openQuote}
+              aria-label={`Open quote cart (${cartItems.length} product${cartItems.length === 1 ? "" : "s"})`}
               className={cn(
-                "relative rounded-lg p-1.5 transition-colors",
+                "relative flex h-11 w-11 items-center justify-center rounded-lg transition-colors",
                 useLightStyle
                   ? "text-gray-700 hover:bg-gray-100 hover:text-amber-600"
                   : "text-white hover:bg-white/20 hover:text-white"
               )}
             >
-              <ShoppingBag className="h-4 w-4" />
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
+              <ShoppingBag className="h-5 w-5" />
+              <span
+                key={lastAddedAt}
+                className="absolute right-0.5 top-0.5 flex h-4 w-4 animate-badge-pop items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white"
+              >
                 {cartItems.length}
               </span>
-            </Link>
+            </button>
           )}
 
           {/* Send Inquiry CTA */}
@@ -235,14 +247,15 @@ export function Header() {
           {/* Mobile Menu Toggle */}
           <button
             onClick={toggleMobileNav}
+            aria-label="Open menu"
             className={cn(
-              "rounded-lg p-1.5 transition-colors lg:hidden",
+              "flex h-11 w-11 items-center justify-center rounded-lg transition-colors lg:hidden",
               useLightStyle
                 ? "text-gray-700 hover:bg-gray-100"
                 : "text-white hover:bg-white/20"
             )}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-6 w-6" />
           </button>
         </div>
         </div>{/* end right group */}

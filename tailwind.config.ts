@@ -54,6 +54,7 @@ const config: Config = {
         "scale-in": "scaleIn 0.2s ease-out",
         ripple: "ripple 1s ease-out",
         "pulse-border": "pulseBorder 2s ease-in-out infinite",
+        "badge-pop": "badgePop 0.45s cubic-bezier(.34,1.56,.64,1)",
       },
       keyframes: {
         fadeIn: {
@@ -75,6 +76,11 @@ const config: Config = {
         ripple: {
           "0%": { transform: "scale(0)", opacity: "0.5" },
           "100%": { transform: "scale(4)", opacity: "0" },
+        },
+        badgePop: {
+          "0%": { transform: "scale(0.4)" },
+          "60%": { transform: "scale(1.35)" },
+          "100%": { transform: "scale(1)" },
         },
         pulseBorder: {
           "0%, 100%": { borderColor: "#5a8f0c" },

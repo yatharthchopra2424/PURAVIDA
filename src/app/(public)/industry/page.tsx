@@ -118,10 +118,10 @@ export default function IndustryPage() {
                 </div>
                 <div>
                   <p className="font-heading text-3xl font-black text-emerald-600">
-                    50+
+                    14+
                   </p>
                   <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Countries served
+                    Years of experience
                   </p>
                 </div>
               </div>

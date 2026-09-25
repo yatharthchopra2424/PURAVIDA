@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Analytics } from "@vercel/analytics/next";
+import { SiteAnalytics } from "@/components/providers/SiteAnalytics";
 import "./globals.css";
 
 import { SITE_URL } from "@/lib/site";
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     template: "%s | PuraVida Natural",
   },
   description:
-    "Leading manufacturer and exporter of premium herbal extracts, essential oils, oleoresins, and nutraceutical ingredients. ISO 9001, GMP, FSSAI certified.",
+    "Supplier and exporter of standardised herbal extracts, essential oils, oleoresins and nutraceutical ingredients from New Delhi, India. 14+ years of experience, FSSAI licensed.",
   keywords: [
     "herbal extracts",
     "essential oils",
@@ -66,13 +66,13 @@ export const metadata: Metadata = {
     url: "/",
     title: "PuraVida Natural — Premium Botanical Extracts & Ingredients",
     description:
-      "Discover 200+ premium botanical ingredients. ISO certified manufacturer & global exporter.",
+      "250+ botanical ingredients: herbal extracts, essential oils, oleoresins and nutraceuticals. Supplying India and export markets.",
   },
   twitter: {
     card: "summary_large_image",
     title: "PuraVida Natural — Premium Botanical Extracts & Ingredients",
     description:
-      "Discover 200+ premium botanical ingredients. ISO certified manufacturer & global exporter.",
+      "250+ botanical ingredients: herbal extracts, essential oils, oleoresins and nutraceuticals. Supplying India and export markets.",
   },
   // icon.png / apple-icon.png / favicon.ico in this directory are picked
   // up automatically by Next's file-based metadata convention — no
@@ -118,7 +118,7 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-surface text-gray-900">
         {children}
         <SpeedInsights />
-        <Analytics />
+        <SiteAnalytics />
       </body>
     </html>
   );

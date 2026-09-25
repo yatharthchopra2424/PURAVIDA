@@ -13,6 +13,8 @@ import {
   productSchema,
 } from "@/lib/structured-data";
 import { ProductDetailClient } from "./ProductDetailClient";
+import { ProductInsights } from "@/components/products/ProductInsights";
+import { buildFaq, buildTitle } from "@/lib/product-content";
 
 export const revalidate = 3600;
 
@@ -70,7 +72,7 @@ export async function generateMetadata({
   ).slice(0, 155);
 
   return {
-    title: product.name,
+    title: buildTitle(product),
     description,
     keywords: [
       product.name,
@@ -122,6 +124,14 @@ export default async function ProductDetailPage({
 
   const jsonLd = jsonLdGraph(
     productSchema(product),
+    {
+      "@type": "FAQPage",
+      mainEntity: buildFaq(product).map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    },
     breadcrumbSchema([
       { name: "Home", path: "/" },
       { name: "Products", path: "/products" },
@@ -140,7 +150,9 @@ export default async function ProductDetailPage({
         product={product}
         category={category}
         relatedProducts={relatedProducts}
-      />
+      >
+        <ProductInsights product={product} />
+      </ProductDetailClient>
     </>
   );
 }

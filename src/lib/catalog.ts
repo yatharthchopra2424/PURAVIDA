@@ -1,7 +1,38 @@
 import { Category, Product, QualityBadge } from "@/types";
 import { getProductImageUrl, getSupabaseServerClient } from "@/lib/supabase";
 import { PRODUCT_FALLBACK_IMAGE as FALLBACK_IMAGE } from "@/lib/constants";
-const FALLBACK_DESCRIPTION = "Details coming soon.";
+/**
+ * Description for products that have none yet (243 of 256 in Sep 2026).
+ *
+ * "Details coming soon." was shown to buyers, used as the meta description
+ * and put in the Product schema, and Google Search Console reported 212
+ * product pages as "Discovered, currently not indexed": thin pages it
+ * didn't think worth crawling. This builds two factual sentences from the
+ * fields every product already has (botanical name, active ingredient with
+ * its standardisation and test method, application areas), so nothing is
+ * invented. A description written in the admin always takes precedence.
+ */
+function buildDescription(row: ProductRow, categoryName: string | undefined): string {
+  const name = row.name.trim();
+  const botanical = row.botanical_name?.trim();
+  const active = (row.concentration ? `${row.active_ingredient} ${row.concentration}` : row.active_ingredient)?.trim();
+  const apps = (row.applications ?? []).filter(Boolean).slice(0, 4);
+  const cat = (categoryName ?? "").toLowerCase();
+
+  const from = botanical ? ` from ${botanical}` : "";
+  let first: string;
+  if (cat.includes("essential")) {
+    first = `${name} is an essential oil${from}${active ? `, with ${active} as its key constituents` : ""}.`;
+  } else if (cat.includes("oleoresin")) {
+    first = `${name} is a concentrated oleoresin${from}${active ? `, characterised by ${active}` : ""}.`;
+  } else if (cat.includes("nutraceutical")) {
+    first = `${name} is a nutraceutical ingredient${from}${active ? ` (${active})` : ""} for dietary supplements and functional foods.`;
+  } else {
+    first = `${name} is a standardised herbal extract${from}${active ? `, standardised to ${active}` : ""}.`;
+  }
+  const uses = apps.length ? ` Typical application areas: ${apps.join(", ")}.` : "";
+  return `${first}${uses} PuraVida Natural supplies ${name} in bulk from New Delhi to manufacturers and brands in India and for export, with a certificate of analysis for each batch on request.`;
+}
 
 type CategoryRow = {
   id: string;
@@ -74,7 +105,7 @@ const mapProductRow = (
     activeCompound: row.active_compound || undefined,
     concentration: row.concentration || undefined,
     applications: row.applications || [],
-    description: row.description || FALLBACK_DESCRIPTION,
+    description: row.description?.trim() || buildDescription(row, category?.name),
     image: row.image_path ? getProductImageUrl(row.image_path) : FALLBACK_IMAGE,
     qualityBadges: row.quality_badges || [],
     isHalal: row.is_halal ?? false,

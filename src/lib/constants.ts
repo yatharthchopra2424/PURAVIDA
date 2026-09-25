@@ -77,8 +77,19 @@ export const COMPANY = {
     pitch: "Try our Advanced Digestive Fibre Blend.",
     url: "https://amzn.in/d/09imCeph",
   },
-  gst: "07ABCFP5743NIZS",
+  // Verified against the GST REG-06 certificate (private-docs/legal/GST.pdf).
+  gst: "07ABCFP5743N1ZS",
+  fssaiLicense: "13325011000309",
+  udyam: "UDYAM-DL-11-0042579",
+  constitution: "Limited Liability Partnership",
   // iec: add the real Import-Export Code here when available.
-  established: "2000",
+  /**
+   * Team experience in botanical ingredients (per the owners, Sep 2026).
+   * The current legal entity, Pura Vida Natural LLP, was registered on
+   * 26 Sep 2022 (Udyam certificate), so "founded" dates use that and
+   * "experience" uses this; the two are never mixed.
+   */
+  experienceYears: 14,
+  llpRegistered: "2022-09-26",
   hours: "Mon - Sat: 9:00 AM - 6:00 PM IST",
 } as const;

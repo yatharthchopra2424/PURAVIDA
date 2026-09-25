@@ -51,3 +51,6 @@ next-env.d.ts
 # Env backups made during migrations — real secrets, never commit.
 .env*.bak*
 .env.backup*
+
+# Legal documents contain personal data (Aadhaar etc.) - never commit or serve
+/private-docs/

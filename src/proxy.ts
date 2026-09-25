@@ -1,8 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdminEmail } from "@/lib/admin-allowlist";
+import { needsSecondFactor } from "@/lib/admin-mfa";
 
 export async function proxy(request: NextRequest) {
+  // Admin API: no redirects here (each route checks auth itself), just
+  // stamp the real method and path for the activity log. Any copy of
+  // these headers sent by the client is overwritten.
+  if (request.nextUrl.pathname.startsWith("/api/admin")) {
+    const headers = new Headers(request.headers);
+    headers.set("x-pv-audit-method", request.method);
+    headers.set("x-pv-audit-path", request.nextUrl.pathname + request.nextUrl.search);
+    return NextResponse.next({ request: { headers } });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -36,6 +47,8 @@ export async function proxy(request: NextRequest) {
   // A session proves identity; the allowlist grants authorisation.
   // Without this, any self-registered Supabase account would be admin.
   const isAdmin = Boolean(user) && isAdminEmail(user?.email);
+  // Password accepted but the authenticator code not yet entered.
+  const owesMfa = isAdmin && (await needsSecondFactor(supabase));
 
   const isLoginRoute = pathname.startsWith("/x-admin/login");
   const isAuthRoute = pathname.startsWith("/x-admin/auth");
@@ -66,12 +79,21 @@ export async function proxy(request: NextRequest) {
       loginUrl.searchParams.set("error", "not_authorized");
       return NextResponse.redirect(loginUrl);
     }
+
+    if (owesMfa) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/x-admin/login";
+      loginUrl.search = "";
+      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("step", "mfa");
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   // If an ADMIN visits the login page, send them to the dashboard.
   // Gated on isAdmin (not merely `user`) — otherwise a signed-in
   // non-admin would bounce login → /x-admin → login forever.
-  if (isLoginRoute && isAdmin) {
+  if (isLoginRoute && isAdmin && !owesMfa) {
     const dashboardUrl = request.nextUrl.clone();
     dashboardUrl.pathname = "/x-admin";
     dashboardUrl.search = "";
@@ -91,5 +113,5 @@ export const config = {
   // needed either: route groups now decide which chrome renders.
   //
   // Public pages can therefore be served straight from the CDN.
-  matcher: ["/x-admin/:path*"],
+  matcher: ["/x-admin/:path*", "/api/admin/:path*"],
 };

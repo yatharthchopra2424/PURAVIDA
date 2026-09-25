@@ -203,7 +203,7 @@ export default function AboutPage() {
               </p>
 
               <div className="flex flex-wrap gap-3 pt-2">
-                {["ISO 9001:2015", "GMP", "FSSAI", "Halal"].map((badge) => (
+                {["FSSAI Licensed", "Halal India", "14+ Years"].map((badge) => (
                   <span
                     key={badge}
                     className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-4 py-2 text-xs font-bold text-emerald-700 shadow-sm"

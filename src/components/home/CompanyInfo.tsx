@@ -6,6 +6,7 @@ import { ArrowRight, Building2, Users, Calendar, Scale, TrendingUp, FileText, Aw
 import { businessProfile } from "@/data/navigation";
 import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/shared/SectionHeading";
+import { COMPANY } from "@/lib/constants";
 
 const profileIcons: Record<string, React.ReactNode> = {
   "Nature of Business": <Building2 className="h-4 w-4" />,
@@ -15,7 +16,7 @@ const profileIcons: Record<string, React.ReactNode> = {
   "Annual Turnover": <TrendingUp className="h-4 w-4" />,
   "Import-Export Code": <FileText className="h-4 w-4" />,
   "GST Number": <FileText className="h-4 w-4" />,
-  "ISO Certification": <Award className="h-4 w-4" />,
+  "FSSAI Licence": <Award className="h-4 w-4" />,
 };
 
 export function CompanyInfo() {
@@ -35,14 +36,14 @@ export function CompanyInfo() {
                 PuraVida Natural is a leading manufacturer and global supplier of
                 premium health products, natural supplements, herbal extracts,
                 essential oils, and botanical ingredients. Based in New Delhi,
-                India, we serve partners across 50+ countries with unwavering
-                commitment to quality.
+                India, with {COMPANY.experienceYears}+ years of experience, we supply
+                manufacturers, brands and traders across India and export to
+                buyers overseas.
               </p>
               <p className="leading-relaxed">
                 Our values are rooted in quality, responsibility, consistency, and
-                service. Every product that leaves our facility carries the
-                assurance of ISO 9001:2015 certification, GMP compliance, and
-                FSSAI registration.
+                service. Every product is supplied under our FSSAI licence, with a
+                certificate of analysis available for each batch.
               </p>
             </div>
             <div className="mt-8">

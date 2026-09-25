@@ -43,10 +43,10 @@ export const navigation: NavItem[] = [
 ];
 
 export const companyStats: CompanyStat[] = [
-  { label: "Years Experience", value: "25", suffix: "+" },
-  { label: "Products", value: "500", suffix: "+" },
-  { label: "Countries Served", value: "50", suffix: "+" },
-  { label: "Certification", value: "ISO", suffix: " 9001:2015" },
+  { label: "Years Experience", value: "14", suffix: "+" },
+  { label: "Products", value: "250", suffix: "+" },
+  { label: "Licence", value: "FSSAI", suffix: "" },
+  { label: "Certification", value: "Halal", suffix: " India" },
 ];
 
 // Sourced from COMPANY so the homepage and footer can never disagree.
@@ -59,12 +59,11 @@ export const companyStats: CompanyStat[] = [
 // the real IEC is to hand.
 export const businessProfile: BusinessProfileItem[] = [
   { label: "Nature of Business", value: "Manufacturer & Supplier" },
-  { label: "Employee Range", value: "100 - 500" },
-  { label: "Year of Establishment", value: COMPANY.established },
-  { label: "Legal Status", value: "Private Limited Company" },
-  { label: "Annual Turnover", value: "₹50 - 100 Crore" },
+  { label: "Industry Experience", value: `${COMPANY.experienceYears}+ years` },
+  { label: "Markets", value: "India & export" },
+  { label: "Legal Status", value: "Limited Liability Partnership (LLP)" },
   { label: "GST Number", value: COMPANY.gst },
-  { label: "ISO Certification", value: "ISO 9001:2015" },
+  { label: "FSSAI Licence", value: COMPANY.fssaiLicense },
 ];
 
 export const whyChooseFeatures: FeatureCard[] = [
@@ -90,13 +89,13 @@ export const whyChooseFeatures: FeatureCard[] = [
     icon: "globe",
     title: "Global Reach",
     description:
-      "Trusted by partners across 50+ countries with seamless international logistics and regulatory compliance.",
+      "Supplying buyers across India and exporting overseas, with the documentation international shipments need.",
   },
   {
     icon: "shield-check",
     title: "Certified Excellence",
     description:
-      "ISO 9001:2015, GMP, FSSAI, and FDA registered. Every certification you need for market confidence.",
+      "FSSAI licensed and Halal India certified, with a certificate of analysis for every batch on request.",
   },
   {
     icon: "headset",

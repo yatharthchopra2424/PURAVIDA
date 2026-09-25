@@ -219,10 +219,13 @@ export function HeroCarousel() {
             className={`flex flex-col gap-5 ${isCenter ? "items-center" : "items-start"}`}
           >
             {/* Headline */}
-            <div className="overflow-hidden">
+            {/* One <h1> per slide; each line animates as its own span.
+                Every line used to be an <h1>, so a two-line slogan gave the
+                home page two top-level headings. */}
+            <h1 className="overflow-hidden">
               {slide.headline.map((line, i) => (
-                <div key={i} className="overflow-hidden">
-                  <motion.h1
+                <span key={i} className="block overflow-hidden">
+                  <motion.span
                     custom={i}
                     variants={headlineVariants}
                     initial="hidden"
@@ -239,10 +242,10 @@ export function HeroCarousel() {
                     }}
                   >
                     {line}
-                  </motion.h1>
-                </div>
+                  </motion.span>{" "}
+                </span>
               ))}
-            </div>
+            </h1>
 
             {/* Gold divider */}
             <motion.div

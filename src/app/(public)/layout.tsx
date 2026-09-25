@@ -3,6 +3,8 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { CommandPalette } from "@/components/search/CommandPalette";
+import { QuoteDrawer } from "@/components/quote/QuoteDrawer";
+import { PageviewTracker } from "@/components/quote/PageviewTracker";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
 import { JsonLd } from "@/components/shared/JsonLd";
 import {
@@ -58,6 +60,8 @@ export default function PublicLayout({
       {/* Client-side overlays */}
       <MobileNav />
       <CommandPalette />
+      <QuoteDrawer />
+      <PageviewTracker />
     </SmoothScrollProvider>
   );
 }

@@ -92,7 +92,7 @@ const STARTER_BODY = [
   "<p>{{icebreaker}}</p>",
   "<p>I'm with PuraVida Natural — we manufacture and export standardised " +
     "botanical extracts, essential oils, oleoresins and fruit powders from " +
-    "India, with GMP/ISO documentation and full COA on every batch.</p>",
+    "India, with a full COA available for every batch.</p>",
   "<p>Given what {{company}} works on, the lines most likely to be relevant " +
     "are {{products}}.</p>",
   "<p>Would it be worth sending our catalogue and current price list?</p>",

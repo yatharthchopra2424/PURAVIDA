@@ -320,3 +320,21 @@ video {
   background-color: #5a8f0c;
   background-clip: content-box;
 }
+
+/* ── Shine sweep for primary CTAs ──────────────────────────────
+   A soft highlight crosses the button on hover. Transform-only, so it
+   never triggers layout; disabled for reduced-motion users. */
+.btn-shine { position: relative; overflow: hidden; isolation: isolate; }
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.45) 50%, transparent 80%);
+  transform: translateX(-120%);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-shine:hover::after { transform: translateX(120%); }
+@media (prefers-reduced-motion: reduce) {
+  .btn-shine::after { display: none; }
+}

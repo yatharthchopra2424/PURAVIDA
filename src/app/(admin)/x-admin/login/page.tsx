@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { ShieldAlert } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { isAdminEmail } from "@/lib/admin-allowlist";
+import { needsSecondFactor } from "@/lib/admin-mfa";
 import LoginForm from "./LoginForm";
 
 export const metadata = {
@@ -22,7 +23,8 @@ export default async function AdminLoginPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user && isAdminEmail(user.email)) {
+  const owesMfa = Boolean(user && isAdminEmail(user.email)) && (await needsSecondFactor(supabase));
+  if (user && isAdminEmail(user.email) && !owesMfa) {
     redirect("/x-admin");
   }
 
@@ -106,7 +108,7 @@ export default async function AdminLoginPage({
           </div>
         )}
 
-        <LoginForm redirectTo={redirectTo} />
+        <LoginForm redirectTo={redirectTo} startAtMfa={owesMfa} />
       </div>
     </div>
   );

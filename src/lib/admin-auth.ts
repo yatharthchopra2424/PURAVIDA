@@ -2,6 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { isAdminEmail } from "@/lib/admin-allowlist";
+import { needsSecondFactor } from "@/lib/admin-mfa";
+import { recordAdminAction } from "@/lib/admin-audit";
 
 export { getAdminEmails, isAdminEmail } from "@/lib/admin-allowlist";
 
@@ -59,6 +61,14 @@ export async function requireAdminUser(): Promise<
     );
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // An admin with two-factor enabled must have entered the code this session.
+  if (await needsSecondFactor(supabase)) {
+    return NextResponse.json({ error: "Two-factor verification required" }, { status: 401 });
+  }
+
+  // Changes and exports go to the activity log (reads don't).
+  await recordAdminAction(user);
 
   return { user };
 }

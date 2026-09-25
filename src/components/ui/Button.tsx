@@ -28,7 +28,9 @@ const buttonVariants = cva(
       size: {
         sm: "h-10 px-4 text-xs sm:h-9", // Mobile: 40px (44px with padding), Desktop: 36px
         md: "h-12 px-6 text-sm sm:h-11", // Mobile: 48px (best for touch), Desktop: 44px
-        lg: "h-13 px-8 text-base", // 52px - good for large CTAs
+        // Tailwind 3 has no `h-13`; the old class generated nothing and every
+        // large CTA collapsed to its text height (28px "Request Quote").
+        lg: "h-[3.25rem] px-8 text-base", // 52px - good for large CTAs
         xl: "h-14 px-10 text-lg", // 56px - extra large CTAs
         icon: "h-10 w-10 sm:h-9 sm:w-9", // Mobile: 40px, Desktop: 36px
       },

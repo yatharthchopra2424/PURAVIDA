@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Package,
   Tag,
-  MessageSquare,
   Users,
   Mail,
   FileText,
@@ -17,6 +16,9 @@ import {
   ChevronRight,
   Leaf,
   DatabaseZap,
+  Globe2,
+  BarChart3,
+  History,
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { useRouter } from "next/navigation";
@@ -32,11 +34,13 @@ const navItems: NavItem[] = [
   { label: "Dashboard", href: "/x-admin", icon: LayoutDashboard },
   { label: "Products", href: "/x-admin/products", icon: Package },
   { label: "Categories", href: "/x-admin/categories", icon: Tag },
-  { label: "Inquiries", href: "/x-admin/inquiries", icon: MessageSquare },
+  { label: "Website Leads", href: "/x-admin/website-leads", icon: Globe2 },
+  { label: "Traffic", href: "/x-admin/traffic", icon: BarChart3 },
   { label: "Leads", href: "/x-admin/leads", icon: Users },
   { label: "Data Sources", href: "/x-admin/data-sources", icon: DatabaseZap },
   { label: "Campaigns", href: "/x-admin/campaigns", icon: Mail },
   { label: "Saved emails", href: "/x-admin/templates", icon: FileText },
+  { label: "Activity log", href: "/x-admin/activity", icon: History },
   { label: "Settings", href: "/x-admin/settings", icon: Settings },
 ];
 
@@ -93,7 +97,7 @@ export default function AdminSidebar({
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
-          const showBadge = item.href === "/x-admin/inquiries" && unreadCount > 0;
+          const showBadge = item.href === "/x-admin/website-leads" && unreadCount > 0;
 
           return (
             <Link

@@ -8,7 +8,7 @@ import { ImageBand } from "@/components/shared/ImageBand";
 export const metadata: Metadata = {
   title: "Pura Vida Advantage",
   description:
-    "A collective experience of more than 30 years in the herbal industry, with standardized botanical powders processed in GMP, ISO 9001, ISO 18001 & ISO 22000 certified facilities.",
+    "14+ years of experience in the herbal industry, supplying standardized botanical powders and extracts to buyers in India and abroad.",
   alternates: { canonical: "/advantage" },
   openGraph: {
     type: "website",
@@ -24,7 +24,7 @@ const ADVANTAGES = [
     icon: TrendingUp,
     number: "01",
     title: "Techno-commercial experience in Herbal industry",
-    body: "A collective experience of more than 30 years with proven track record and our credibility amongst suppliers, customers and all other stake holders.",
+    body: "14+ years of experience with a proven track record and our credibility amongst suppliers, customers and all other stake holders.",
   },
   {
     icon: BarChart3,
@@ -40,14 +40,14 @@ const ADVANTAGES = [
   },
 ];
 
-const CERTIFICATIONS = ["GMP", "ISO 9001", "ISO 18001", "ISO 22000"];
+const CERTIFICATIONS = ["FSSAI Licensed", "Halal India", "COA per batch"];
 
 export default function AdvantagePage() {
   return (
     <>
       <PageHero
         title="Pura Vida Advantage"
-        subtitle="More than 30 years of collective experience in the herbal industry."
+        subtitle="14+ years of experience in the herbal industry."
         image="/images/banner3.webp"
         imageAlt="Assorted botanical ingredients, herbs and essential oils"
         crumbs={[{ label: "Home", href: "/" }, { label: "Pura Vida Advantage" }]}
@@ -74,10 +74,8 @@ export default function AdvantagePage() {
             />
             <p className="mt-7 text-[17px] leading-[1.9] text-gray-600">
               We offer a wide range of standardized botanical powders, prepared
-              using authenticated finest quality raw herbs, that are processed in
-              state of the art GMP, ISO 9001, ISO 18001 &amp; ISO 22000
-              certified facilities to ensure highest quality and retention of its
-              secondary metabolites. Our dietary ingredients are 100% natural,
+              using authenticated finest quality raw herbs, processed to ensure
+              the highest quality and retention of their secondary metabolites. Our dietary ingredients are 100% natural,
               tested in our in-house laboratory for compliance with international
               quality standards.
             </p>

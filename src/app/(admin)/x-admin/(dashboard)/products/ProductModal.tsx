@@ -12,7 +12,8 @@ function getImageUrl(path: string) {
   return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 }
 
-const QUALITY_BADGES = ["ISO", "GMP", "FSSAI", "Halal", "FDA", "Export"];
+// "ISO" removed from the choices: no ISO certificate is on file.
+const QUALITY_BADGES = ["GMP", "FSSAI", "Halal", "FDA", "Export"];
 
 interface Category {
   id: string;

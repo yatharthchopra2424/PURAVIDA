@@ -9,7 +9,7 @@ import { Category, Product } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useCartStore } from "@/stores/useCartStore";
-import { PRODUCT_FALLBACK_IMAGE } from "@/lib/constants";
+import { COMPANY, PRODUCT_FALLBACK_IMAGE } from "@/lib/constants";
 
 const badgeVariantMap: Record<string, "iso" | "gmp" | "fssai" | "halal" | "fda" | "export"> = {
   ISO: "iso",
@@ -24,10 +24,13 @@ export function ProductDetailClient({
   product,
   category,
   relatedProducts,
+  children,
 }: {
   product: Product;
   category: Category;
   relatedProducts: Product[];
+  /** Server-rendered content (spec table, FAQ) shown between the hero and related products. */
+  children?: React.ReactNode;
 }) {
   const addItem = useCartStore((s) => s.addItem);
   const hasRealImage = product.image !== PRODUCT_FALLBACK_IMAGE;
@@ -168,6 +171,13 @@ export function ProductDetailClient({
                   <Badge variant="halal">Halal Certified</Badge>
                 )}
               </div>
+              {/* Most products carry no per-product badge, which left this
+                  box empty. These hold for every product we supply. */}
+              <ul className="mt-3 space-y-1.5 text-sm text-gray-600">
+                <li>• Supplied under FSSAI licence {COMPANY.fssaiLicense}</li>
+                <li>• Certificate of analysis available on request</li>
+                <li>• Samples available for evaluation</li>
+              </ul>
             </div>
 
             {/* CTAs */}
@@ -186,6 +196,8 @@ export function ProductDetailClient({
             </div>
           </div>
         </div>
+
+        {children}
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (

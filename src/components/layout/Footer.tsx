@@ -25,31 +25,28 @@ export async function Footer() {
           {/* Company Info */}
           <div className="lg:col-span-1">
             <div className="mb-4 flex items-center gap-2">
-              <div className="relative h-9 w-9 overflow-hidden rounded-lg bg-white">
-                <Image
-                  src="/images/logo-new.png"
-                  alt="Pura Vida"
-                  fill
-                  sizes="36px"
-                  className="object-contain"
-                />
-              </div>
-              <div>
-                <span className="text-lg font-bold text-white">Pura</span>
-                <span className="text-lg font-bold text-orange-400">Vida</span>
-              </div>
+              {/* White knock-out wordmark: the green logo squeezed into a
+                  36px white square rendered as an empty box. */}
+              <Image
+                src="/images/logo-bg-rm.png"
+                alt="Pura Vida Natural"
+                width={696}
+                height={358}
+                sizes="160px"
+                className="h-auto w-40"
+              />
             </div>
             <p className="mb-4 text-sm leading-relaxed text-emerald-100">
               Premium manufacturer and global supplier of natural health
               products, botanical ingredients, herbal extracts, essential oils,
-              and nutraceutical ingredients since {COMPANY.established}.
+              and nutraceutical ingredients, with {COMPANY.experienceYears}+ years of experience supplying India and export markets.
             </p>
             <div className="flex gap-2">
               <span className="inline-flex items-center gap-1 rounded-md bg-emerald-800 px-2 py-1 text-[10px] font-medium text-white">
-                <Shield className="h-3 w-3" /> ISO 9001:2015
+                <Shield className="h-3 w-3" /> FSSAI Licensed
               </span>
               <span className="inline-flex items-center gap-1 rounded-md bg-emerald-800 px-2 py-1 text-[10px] font-medium text-white">
-                <Award className="h-3 w-3" /> GMP
+                <Award className="h-3 w-3" /> Halal India
               </span>
             </div>
           </div>
@@ -68,6 +65,9 @@ export async function Footer() {
                 { label: "Facility & Certification", href: "/facility" },
                 { label: "Industry", href: "/industry" },
                 { label: "Our Products", href: "/products" },
+                { label: "Encapsulated Oleoresins", href: "/encapsulated-oleoresins" },
+                { label: "Buyer Guides", href: "/guides" },
+                { label: "Selvasoul Fiber Blend (Amazon)", href: "/selvasoul-digestive-fiber-blend" },
                 { label: "Contact", href: "/contact" },
               ].map((link) => (
                 <li key={link.label}>
@@ -165,7 +165,7 @@ export async function Footer() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-xs text-emerald-200 sm:flex-row sm:px-6">
           <p>&copy; {currentYear} {COMPANY.name}. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <span>Export Quality Certified</span>
+            <span>India &amp; Export</span>
             <span className="text-emerald-400">|</span>
             <span>Made in India</span>
             <span className="text-emerald-400">|</span>

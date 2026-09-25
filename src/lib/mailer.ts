@@ -45,8 +45,21 @@
 import { randomUUID } from "node:crypto";
 import nodemailer, { type Transporter } from "nodemailer";
 
-export type MailIdentity = "domestic" | "export";
-export const MAIL_IDENTITIES: MailIdentity[] = ["domestic", "export"];
+/**
+ * "pk" is the customer-facing mailbox (pk@) that sends website enquiry
+ * confirmations. It is not a campaign sender, so it is not in the list
+ * campaigns choose from.
+ */
+export type MailIdentity = "domestic" | "export" | "pk";
+export type CampaignIdentity = Exclude<MailIdentity, "pk">;
+export const MAIL_IDENTITIES: CampaignIdentity[] = ["domestic", "export"];
+const ALL_IDENTITIES: MailIdentity[] = ["domestic", "export", "pk"];
+
+const PREFIX: Record<MailIdentity, { smtp: string; mail: string; label: string }> = {
+  domestic: { smtp: "SMTP_", mail: "MAIL_", label: "SMTP" },
+  export: { smtp: "SMTP_EXPORT_", mail: "MAIL_EXPORT_", label: "Export SMTP (SMTP_EXPORT_*)" },
+  pk: { smtp: "SMTP_PK_", mail: "MAIL_PK_", label: "pk@ SMTP (SMTP_PK_*)" },
+};
 
 export interface MailerConfig {
   identity: MailIdentity;
@@ -62,12 +75,14 @@ export interface MailerConfig {
 
 /** Reads and validates SMTP env for one identity. Returns null when not configured. */
 export function getMailerConfig(identity: MailIdentity = "domestic"): MailerConfig | null {
-  const prefix = identity === "export" ? "SMTP_EXPORT_" : "SMTP_";
-  const mailPrefix = identity === "export" ? "MAIL_EXPORT_" : "MAIL_";
+  const prefix = PREFIX[identity].smtp;
+  const mailPrefix = PREFIX[identity].mail;
+  // Secondary mailboxes on the same provider inherit host/port/TLS.
+  const inherits = identity !== "domestic";
 
   const host =
     process.env[`${prefix}HOST`]?.trim() ||
-    (identity === "export" ? process.env.SMTP_HOST?.trim() : undefined);
+    (inherits ? process.env.SMTP_HOST?.trim() : undefined);
   const user = process.env[`${prefix}USER`]?.trim();
   const pass = process.env[`${prefix}PASS`];
   const fromEmail = process.env[`${mailPrefix}FROM_EMAIL`]?.trim() || user;
@@ -82,13 +97,13 @@ export function getMailerConfig(identity: MailIdentity = "domestic"): MailerConf
   // domestic port.
   const portEnv =
     process.env[`${prefix}PORT`]?.trim() ||
-    (identity === "export" ? process.env.SMTP_PORT?.trim() : undefined);
+    (inherits ? process.env.SMTP_PORT?.trim() : undefined);
   const port = Number.parseInt(portEnv || "587", 10);
   const resolvedPort = Number.isFinite(port) ? port : 587;
 
   const secureEnv =
     process.env[`${prefix}SECURE`]?.trim() ||
-    (identity === "export" ? process.env.SMTP_SECURE?.trim() : undefined);
+    (inherits ? process.env.SMTP_SECURE?.trim() : undefined);
 
   return {
     identity,
@@ -124,11 +139,7 @@ export function getTransport(identity: MailIdentity = "domestic"): Transporter {
 
   const config = getMailerConfig(identity);
   if (!config) {
-    throw new Error(
-      identity === "export"
-        ? "Export SMTP is not configured. Set SMTP_EXPORT_USER and SMTP_EXPORT_PASS."
-        : "SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_FROM_EMAIL."
-    );
+    throw new Error(`${PREFIX[identity].label} is not configured.`);
   }
 
   const transport = nodemailer.createTransport({
@@ -157,7 +168,7 @@ export async function verifyTransport(
   if (!isMailerConfigured(identity)) {
     return {
       ok: false,
-      error: identity === "export" ? "Export SMTP is not configured." : "SMTP is not configured.",
+      error: `${PREFIX[identity].label} is not configured.`,
     };
   }
   try {
@@ -209,9 +220,7 @@ export async function sendMail(options: SendMailOptions): Promise<SendResult> {
   const identity = options.identity ?? "domestic";
   const config = getMailerConfig(identity);
   if (!config) {
-    throw new Error(
-      identity === "export" ? "Export SMTP is not configured" : "SMTP is not configured"
-    );
+    throw new Error(`${PREFIX[identity].label} is not configured`);
   }
 
   const info = await getTransport(identity).sendMail({
@@ -338,7 +347,7 @@ export function smtpErrorHelp(error: string): string | null {
 
 /** Drops the pooled connection(s). Called when a batch finishes. */
 export function closeTransport(identity?: MailIdentity): void {
-  const identities = identity ? [identity] : MAIL_IDENTITIES;
+  const identities = identity ? [identity] : ALL_IDENTITIES;
   for (const id of identities) {
     cached[id]?.close();
     delete cached[id];

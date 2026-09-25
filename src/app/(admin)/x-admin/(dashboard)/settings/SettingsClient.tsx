@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Lock, AlertTriangle, CheckCircle } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import SystemStatusPanel, { type SystemStatus } from "./SystemStatusPanel";
+import TwoFactorPanel from "./TwoFactorPanel";
 
 export default function SettingsClient({ status }: { status: SystemStatus }) {
   const router = useRouter();
@@ -189,6 +190,7 @@ export default function SettingsClient({ status }: { status: SystemStatus }) {
         </div>
       </div>
 
+      <TwoFactorPanel />
       <SystemStatusPanel status={status} />
 
     </div>

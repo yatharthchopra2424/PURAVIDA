@@ -32,7 +32,7 @@ export default async function ProductOpenGraphImage({
   const active = product?.activeIngredient ?? "";
   const concentration = product?.concentration ?? "";
   const category = product?.category ?? "PuraVida Natural";
-  const badges = product?.qualityBadges?.slice(0, 4) ?? ["ISO", "GMP", "FSSAI"];
+  const badges = product?.qualityBadges?.slice(0, 4) ?? ["FSSAI"];
 
   return new ImageResponse(
     (

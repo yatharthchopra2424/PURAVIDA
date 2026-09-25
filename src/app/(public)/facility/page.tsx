@@ -15,11 +15,12 @@ import {
 } from "lucide-react";
 import { PageHero } from "@/components/layout/PageHero";
 import { ImageBand } from "@/components/shared/ImageBand";
+import { COMPANY } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Facility & Certification",
   description:
-    "State of the art GMP, ISO 9001, ISO 18001 & ISO 22000 certified facilities with in-house HPLC laboratory testing for compliance with international quality standards.",
+    "FSSAI licensed, Halal India certified supply with batch-wise laboratory testing and certificates of analysis on request.",
   alternates: { canonical: "/facility" },
   openGraph: {
     type: "website",
@@ -31,10 +32,7 @@ export const metadata: Metadata = {
 };
 
 const CERTIFICATIONS = [
-  { name: "ISO 9001:2015", body: "Quality management systems." },
   { name: "GMP", body: "Good Manufacturing Practice." },
-  { name: "ISO 18001", body: "Occupational health & safety." },
-  { name: "ISO 22000", body: "Food safety management." },
   { name: "FSSAI", body: "Food Safety and Standards Authority of India." },
   { name: "Halal", body: "Certified Halal product range." },
 ];
@@ -93,8 +91,15 @@ const QUALITY_STEPS = [
   },
 ];
 
+// Licence PDFs are not published: the FSSAI annexure carries an officer's
+// Aadhaar number. Buyers verify the licence on the government portal instead.
+const REGISTRATIONS = [
+  { label: "FSSAI Licence", value: COMPANY.fssaiLicense, verify: "https://foscos.fssai.gov.in/" },
+  { label: "GSTIN", value: COMPANY.gst, verify: "https://services.gst.gov.in/services/searchtp" },
+  { label: "Udyam (MSME)", value: COMPANY.udyam, verify: "https://udyamregistration.gov.in/" },
+];
+
 const DOCUMENTS = [
-  { label: "FSSAI Certificate", href: "/Product List & Certificates/Fssai Certificate.pdf" },
   { label: "Halal Product List", href: "/Product List & Certificates/PVNL - Halal Product list.pdf" },
   { label: "Product List", href: "/Product List & Certificates/Product List.pdf" },
 ];
@@ -133,9 +138,8 @@ export default function FacilityPage() {
               className="mx-auto mt-6 block h-px w-24 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent"
             />
             <p className="mt-7 text-[17px] leading-[1.9] text-gray-600">
-              Our botanical powders and extracts are processed in state of the
-              art GMP, ISO 9001, ISO 18001 &amp; ISO 22000 certified facilities
-              to ensure highest quality and retention of secondary metabolites.
+              Our botanical powders and extracts are processed to ensure the
+              highest quality and retention of secondary metabolites.
               Dietary ingredients are 100% natural and tested in our in-house
               laboratory for compliance with international quality standards.
             </p>
@@ -288,6 +292,17 @@ export default function FacilityPage() {
                 Certificates and product listings, available to download.
                 Certificates of analysis are issued per consignment on request.
               </p>
+              <dl className="mt-6 grid gap-3 sm:grid-cols-3">
+                {REGISTRATIONS.map((r) => (
+                  <div key={r.label} className="rounded-xl border border-emerald-100 bg-white px-4 py-3">
+                    <dt className="text-xs font-bold uppercase tracking-wider text-gray-500">{r.label}</dt>
+                    <dd className="mt-1 font-mono text-sm font-semibold text-gray-900">{r.value}</dd>
+                    <a href={r.verify} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs font-semibold text-emerald-700 hover:underline">
+                      Verify on official portal →
+                    </a>
+                  </div>
+                ))}
+              </dl>
               <div className="mt-6 flex flex-wrap gap-3">
                 {DOCUMENTS.map((doc) => (
                   <a

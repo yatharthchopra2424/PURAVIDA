@@ -5,6 +5,7 @@ import { ShopByCategory } from "@/components/home/ShopByCategory";
 import { ProductCarousel } from "@/components/home/ProductRange";
 import { CompanyInfo } from "@/components/home/CompanyInfo";
 import { AboutSection } from "@/components/home/AboutSection";
+import { ProofBar, ExportSection, TransparencySection, QuoteBand } from "@/components/home/TrustSections";
 import { fetchCatalogSnapshot } from "@/lib/catalog";
 
 // ISR: serve from the CDN and regenerate hourly instead of querying
@@ -17,6 +18,7 @@ export default async function HomePage() {
   return (
     <>
       <HeroCarousel />
+      <ProofBar productCount={products.length} />
       {/* Brand story sits directly under the hero — everything below it
           shifts down. Kept outside the parallax wrapper so its own
           gradient reads cleanly. */}
@@ -28,6 +30,9 @@ export default async function HomePage() {
         <CompanyInfo />
         <AboutSection />
       </div>
+      <ExportSection />
+      <TransparencySection />
+      <QuoteBand productCount={products.length} />
     </>
   );
 }

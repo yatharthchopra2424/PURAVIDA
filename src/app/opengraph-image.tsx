@@ -78,7 +78,7 @@ export default async function OpenGraphImage() {
 
         {/* Credentials */}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          {["ISO 9001:2015", "GMP", "FSSAI", "Exporting to 50+ countries"].map(
+          {["14+ years", "FSSAI licensed", "Halal India certified", "India & export"].map(
             (badge) => (
               <div
                 key={badge}

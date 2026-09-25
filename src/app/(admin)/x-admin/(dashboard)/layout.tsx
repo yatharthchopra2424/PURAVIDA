@@ -28,6 +28,13 @@ export const dynamic = "force-dynamic";
 async function getUnreadCount(): Promise<number> {
   try {
     const supabase = createSupabaseServiceClient();
+    // New website quote requests; falls back to the legacy inbox until
+    // scripts/website-schema.sql has been run.
+    const wl = await supabase
+      .from("website_leads")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "new");
+    if (!wl.error) return wl.count ?? 0;
     const { count } = await supabase
       .from("contacts")
       .select("id", { count: "exact", head: true })
