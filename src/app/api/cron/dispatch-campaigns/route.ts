@@ -48,9 +48,14 @@ async function handle(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!isMailerConfigured()) {
+  // Gate on either identity, not just the domestic one — an
+  // export-only campaign must still dispatch even if rk@ has no
+  // password set. dispatchCampaign checks each campaign's own identity
+  // and reports a clear per-campaign error if that one specifically
+  // isn't configured.
+  if (!isMailerConfigured("domestic") && !isMailerConfigured("export")) {
     return NextResponse.json(
-      { error: "SMTP is not configured; nothing dispatched." },
+      { error: "No SMTP identity is configured; nothing dispatched." },
       { status: 503 }
     );
   }

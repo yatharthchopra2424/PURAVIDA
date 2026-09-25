@@ -23,10 +23,12 @@ import {
 } from "lucide-react";
 import {
   DEFAULT_LEAD_FILTERS,
+  LEAD_MARKETS,
   LEAD_PRIORITIES,
   LEAD_SEGMENTS,
   LEAD_STATUSES,
   LEAD_TAGS,
+  MARKET_LABELS,
   STATUS_LABELS,
   TAG_LABELS,
   serializeLeadFilters,
@@ -224,6 +226,7 @@ export default function LeadsClient({
     filters.segments.length +
     filters.priorities.length +
     filters.statuses.length +
+    filters.markets.length +
     (filters.source ? 1 : 0) +
     (filters.minScore !== null ? 1 : 0) +
     (filters.hasEmail ? 1 : 0) +
@@ -297,6 +300,36 @@ export default function LeadsClient({
             Email {selectionCount > 0 ? selectionCount.toLocaleString() : ""}
           </button>
         </div>
+      </div>
+
+      {/* Domestic vs export — the two lead bases most people want to
+          work with separately. A quick single-select on top of the
+          same market filter used in the panel below. */}
+      <div className="flex flex-wrap gap-1.5">
+        {(
+          [
+            { key: "all", label: "All leads", markets: [] as string[] },
+            { key: "domestic", label: "Domestic (India)", markets: ["domestic"] as string[] },
+            { key: "export", label: "Export", markets: ["export"] as string[] },
+          ]
+        ).map((tab) => {
+          const active =
+            tab.markets.length === filters.markets.length &&
+            tab.markets.every((m) => filters.markets.includes(m));
+          return (
+            <button
+              key={tab.key}
+              onClick={() => updateFilters({ markets: tab.markets })}
+              className={`rounded-xl px-3.5 py-2 text-sm font-medium transition-colors ${
+                active
+                  ? "bg-emerald-500 text-white"
+                  : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {hasPendingTemplate && (
@@ -373,6 +406,20 @@ export default function LeadsClient({
                 Must have every selected tag (instead of any)
               </label>
             )}
+          </FilterGroup>
+
+          <FilterGroup label="Market">
+            <div className="flex flex-wrap gap-1.5">
+              {LEAD_MARKETS.map((m) => (
+                <Chip
+                  key={m}
+                  active={filters.markets.includes(m)}
+                  onClick={() => updateFilters({ markets: toggleInList(filters.markets, m) })}
+                >
+                  {MARKET_LABELS[m] ?? m}
+                </Chip>
+              ))}
+            </div>
           </FilterGroup>
 
           <FilterGroup label="Priority">

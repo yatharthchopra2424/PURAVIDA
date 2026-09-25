@@ -12,32 +12,19 @@ export const metadata = {
   title: "Settings — PuraVida Admin",
 };
 
-async function getStatus(adminEmail: string): Promise<SystemStatus> {
-  const mailer = getMailerConfig();
+/** Builds the read-only status block for one mailbox identity. */
+async function buildMailStatus(
+  identity: "domestic" | "export",
+  siteHost: string | null,
+  isLocalOrPreview: boolean
+): Promise<SystemStatus["mail"]> {
+  const mailer = getMailerConfig(identity);
 
-  // A From: domain that disagrees with the site's own is a genuine spam
-  // signal — but only in production. In development SITE_URL is
-  // localhost, which is not a sending identity at all, so comparing
-  // against it produced a scary and completely false warning on every
-  // dev machine. Only a real, non-preview host is worth comparing.
   let domainMismatch: string | null = null;
   let authReport: SystemStatus["mail"]["auth"] = null;
 
   if (mailer) {
     const fromDomain = domainOf(mailer.fromEmail);
-
-    let siteHost: string | null = null;
-    try {
-      siteHost = new URL(SITE_URL).host.toLowerCase().replace(/^www\./, "");
-    } catch {
-      siteHost = null;
-    }
-
-    const isLocalOrPreview =
-      !siteHost ||
-      siteHost.startsWith("localhost") ||
-      siteHost.startsWith("127.0.0.1") ||
-      siteHost.endsWith(".vercel.app");
 
     if (fromDomain && siteHost && !isLocalOrPreview) {
       const aligned =
@@ -52,6 +39,8 @@ async function getStatus(adminEmail: string): Promise<SystemStatus> {
 
     // The records that actually decide inbox placement live in DNS,
     // where nothing in a deploy can verify them. Read them for real.
+    // Both mailboxes live on the same domain, so this is the same
+    // lookup either way — cheap enough not to bother caching.
     if (fromDomain) {
       try {
         authReport = await checkEmailAuth(fromDomain);
@@ -60,6 +49,43 @@ async function getStatus(adminEmail: string): Promise<SystemStatus> {
       }
     }
   }
+
+  return {
+    configured: mailer !== null,
+    host: mailer?.host ?? null,
+    port: mailer?.port ?? null,
+    secure: mailer?.secure ?? false,
+    fromEmail: mailer?.fromEmail ?? null,
+    fromName: mailer?.fromName ?? null,
+    replyTo: mailer?.replyTo ?? null,
+    contactInbox: process.env.CONTACT_EMAIL?.trim() || COMPANY.email,
+    domainMismatch,
+    auth: authReport,
+  };
+}
+
+async function getStatus(adminEmail: string): Promise<SystemStatus> {
+  // A From: domain that disagrees with the site's own is a genuine spam
+  // signal — but only in production. In development SITE_URL is
+  // localhost, which is not a sending identity at all, so comparing
+  // against it produced a scary and completely false warning on every
+  // dev machine. Only a real, non-preview host is worth comparing.
+  let siteHost: string | null = null;
+  try {
+    siteHost = new URL(SITE_URL).host.toLowerCase().replace(/^www\./, "");
+  } catch {
+    siteHost = null;
+  }
+  const isLocalOrPreview =
+    !siteHost ||
+    siteHost.startsWith("localhost") ||
+    siteHost.startsWith("127.0.0.1") ||
+    siteHost.endsWith(".vercel.app");
+
+  const [mail, exportMail] = await Promise.all([
+    buildMailStatus("domestic", siteHost, isLocalOrPreview),
+    buildMailStatus("export", siteHost, isLocalOrPreview),
+  ]);
 
   // The lead tables are created by a SQL file the operator runs by hand,
   // so "table does not exist" is an expected state, not an error.
@@ -93,21 +119,14 @@ async function getStatus(adminEmail: string): Promise<SystemStatus> {
     adminEmail,
     adminAllowlist: getAdminEmails(),
     siteUrl: SITE_URL,
-    mail: {
-      configured: mailer !== null,
-      host: mailer?.host ?? null,
-      port: mailer?.port ?? null,
-      secure: mailer?.secure ?? false,
-      fromEmail: mailer?.fromEmail ?? null,
-      fromName: mailer?.fromName ?? null,
-      replyTo: mailer?.replyTo ?? null,
-      contactInbox: process.env.CONTACT_EMAIL?.trim() || COMPANY.email,
-      domainMismatch,
-      auth: authReport,
-    },
+    mail,
+    exportMail,
     ai: {
       configured: Boolean(process.env.NVIDIA_API_KEY?.trim()),
       model: process.env.NVIDIA_MODEL?.trim() || "nvidia/nemotron-3-super-120b-a12b",
+      keyCount: [1, 2, 3, 4, 5, 6, 7, 8].filter((n) =>
+        Boolean(process.env[n === 1 ? "NVIDIA_API_KEY" : `NVIDIA_API_KEY_${n}`]?.trim())
+      ).length,
     },
     dispatcher: { secretSet: Boolean(process.env.CRON_SECRET?.trim()) },
     leads,

@@ -13,6 +13,9 @@ import {
   Eye,
   MousePointerClick,
   XCircle,
+  FileWarning,
+  Copy,
+  Check,
 } from "lucide-react";
 
 export interface Campaign {
@@ -23,6 +26,7 @@ export interface Campaign {
   from_name: string | null;
   from_email: string | null;
   reply_to: string | null;
+  identity?: "domestic" | "export";
   status: string;
   batch_size: number;
   total_count: number;
@@ -49,6 +53,9 @@ export interface Recipient {
   click_count: number;
   first_clicked_at: string | null;
   unsubscribed_at: string | null;
+  /** The lead's raw `source` tag, and the original file name resolved from it (null for the IPHEX catalogue, whose source isn't file-based). */
+  source: string | null;
+  sourceFile: string | null;
 }
 
 const RECIPIENT_STATUS_STYLES: Record<string, string> = {
@@ -205,7 +212,18 @@ export default function CampaignReportClient({
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl font-bold text-white">{campaign.name}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-heading text-2xl font-bold text-white">{campaign.name}</h1>
+              <span
+                className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
+                  campaign.identity === "export"
+                    ? "bg-sky-500/15 text-sky-300"
+                    : "bg-emerald-500/15 text-emerald-300"
+                }`}
+              >
+                {campaign.identity === "export" ? "Export" : "Domestic"}
+              </span>
+            </div>
             <p className="mt-0.5 text-sm text-zinc-400">{campaign.subject}</p>
             <p className="mt-1 text-xs text-zinc-600">
               {campaign.from_name} &lt;{campaign.from_email}&gt;
@@ -360,6 +378,9 @@ export default function CampaignReportClient({
                         {r.error}
                       </div>
                     )}
+                    {(r.status === "failed" || r.status === "bounced") && r.sourceFile && (
+                      <SourceFileHint sourceFile={r.sourceFile} />
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -409,6 +430,39 @@ export default function CampaignReportClient({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Shown under a failed/bounced recipient — which raw file its lead came
+ * from, and the exact command to re-read just that file after fixing
+ * whatever was wrong with the address in it.
+ */
+function SourceFileHint({ sourceFile }: { sourceFile: string }) {
+  const [copied, setCopied] = useState(false);
+  const command = `npm run leads:extract-raw -- --file "${sourceFile}"`;
+
+  async function copy() {
+    await navigator.clipboard.writeText(command);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <div className="mt-1 flex items-center gap-1.5 text-xs text-zinc-500">
+      <FileWarning className="h-3 w-3 flex-shrink-0 text-amber-500" />
+      <span className="truncate" title={sourceFile}>
+        from {sourceFile}
+      </span>
+      <button
+        onClick={copy}
+        title={command}
+        className="flex items-center gap-1 rounded bg-zinc-800 px-1.5 py-0.5 text-[11px] text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+      >
+        {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+        {copied ? "Copied" : "Copy re-check command"}
+      </button>
     </div>
   );
 }

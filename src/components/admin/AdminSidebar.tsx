@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Leaf,
+  DatabaseZap,
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { useRouter } from "next/navigation";
@@ -33,6 +34,7 @@ const navItems: NavItem[] = [
   { label: "Categories", href: "/x-admin/categories", icon: Tag },
   { label: "Inquiries", href: "/x-admin/inquiries", icon: MessageSquare },
   { label: "Leads", href: "/x-admin/leads", icon: Users },
+  { label: "Data Sources", href: "/x-admin/data-sources", icon: DatabaseZap },
   { label: "Campaigns", href: "/x-admin/campaigns", icon: Mail },
   { label: "Saved emails", href: "/x-admin/templates", icon: FileText },
   { label: "Settings", href: "/x-admin/settings", icon: Settings },

@@ -3,11 +3,12 @@ import { z } from "zod";
 import { requireAdminUser } from "@/lib/admin-auth";
 import { createSupabaseServiceClient } from "@/lib/supabase-service";
 import { isMailerConfigured } from "@/lib/mailer";
+import { attachSourceFiles } from "@/lib/campaign-recipients";
 
 const CAMPAIGN_COLUMNS =
   "id, name, subject, body_html, from_name, from_email, reply_to, status, batch_size, " +
   "total_count, sent_count, failed_count, opened_count, clicked_count, " +
-  "created_by, created_at, started_at, completed_at";
+  "created_by, created_at, started_at, completed_at, identity";
 
 const CampaignPatchSchema = z.object({
   action: z.enum(["start", "pause", "resume"]).optional(),
@@ -57,7 +58,29 @@ export async function GET(
     recipientQuery = recipientQuery.eq("status", recipientStatus);
   }
 
-  const { data: recipients, count } = await recipientQuery;
+  interface RecipientRow {
+    id: string;
+    lead_id: string | null;
+    to_email: string;
+    to_name: string | null;
+    status: string;
+    error: string | null;
+    sent_at: string | null;
+    open_count: number;
+    first_opened_at: string | null;
+    click_count: number;
+    first_clicked_at: string | null;
+    unsubscribed_at: string | null;
+  }
+
+  const { data: recipientsRaw, count } = await recipientQuery;
+  const recipients = (recipientsRaw ?? []) as unknown as RecipientRow[];
+
+  // Which raw file each recipient's lead came from — shown for failed
+  // sends specifically, so a bounce or rejection points straight back
+  // at the spreadsheet/doc to go re-check rather than leaving "why did
+  // this one fail" as a guess.
+  const recipientsWithSource = await attachSourceFiles(supabase, recipients);
 
   // The denormalised counters on the campaign can lag a dispatcher run;
   // the report reads the real per-status split so the numbers on screen
@@ -76,10 +99,12 @@ export async function GET(
 
   return NextResponse.json({
     data: campaign,
-    recipients: recipients ?? [],
+    recipients: recipientsWithSource,
     recipientTotal: count ?? 0,
     breakdown,
-    mailerConfigured: isMailerConfigured(),
+    mailerConfigured: isMailerConfigured(
+      ((campaign as { identity?: string }).identity as "domestic" | "export" | undefined) ?? "domestic"
+    ),
   });
 }
 
@@ -115,9 +140,23 @@ export async function PATCH(
   if (parsed.data.action === "pause") {
     patch.status = "paused";
   } else if (parsed.data.action === "start" || parsed.data.action === "resume") {
-    if (!isMailerConfigured()) {
+    const { data: existing } = await supabase
+      .from("email_campaigns")
+      .select("identity")
+      .eq("id", id)
+      .single();
+    const identity =
+      ((existing as { identity?: string } | null)?.identity as "domestic" | "export" | undefined) ??
+      "domestic";
+
+    if (!isMailerConfigured(identity)) {
       return NextResponse.json(
-        { error: "SMTP is not configured — nothing would send." },
+        {
+          error:
+            identity === "export"
+              ? "Export SMTP is not configured — nothing would send."
+              : "SMTP is not configured — nothing would send.",
+        },
         { status: 400 }
       );
     }

@@ -19,18 +19,37 @@
  *                       keeps complaint rates down, and the complaint
  *                       rate is what protects the sending domain.
  *
+ * Both take an `identity`: "domestic" sends as rk@ (India-market leads,
+ * the original catalogue), "export" sends as exports@ (the international
+ * lead batches). Two mailboxes rather than one From: header switched at
+ * send time, because a recipient who replies must land in the inbox the
+ * right person actually reads, and because the two markets' sending
+ * reputations should not be able to affect each other.
+ *
  * Required env (server-side only, never NEXT_PUBLIC_):
- *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+ *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS      — domestic (rk@)
  *   SMTP_SECURE      "true" for implicit TLS on 465; omit for 587 STARTTLS
  *   MAIL_FROM_EMAIL  the From: address, on a domain with SPF+DKIM+DMARC
  *   MAIL_FROM_NAME   display name (optional)
  *   MAIL_REPLY_TO    where replies should land (optional)
+ *
+ *   SMTP_EXPORT_USER, SMTP_EXPORT_PASS              — export (exports@)
+ *   SMTP_EXPORT_HOST, SMTP_EXPORT_PORT, SMTP_EXPORT_SECURE  (optional —
+ *                       default to the same host/port/secure as domestic,
+ *                       since it's the same mail provider)
+ *   MAIL_EXPORT_FROM_EMAIL, MAIL_EXPORT_FROM_NAME, MAIL_EXPORT_REPLY_TO
+ *                       (optional — default to SMTP_EXPORT_USER / "PuraVida
+ *                       Natural" / unset)
  */
 
 import { randomUUID } from "node:crypto";
 import nodemailer, { type Transporter } from "nodemailer";
 
+export type MailIdentity = "domestic" | "export";
+export const MAIL_IDENTITIES: MailIdentity[] = ["domestic", "export"];
+
 export interface MailerConfig {
+  identity: MailIdentity;
   host: string;
   port: number;
   secure: boolean;
@@ -41,58 +60,78 @@ export interface MailerConfig {
   replyTo: string | null;
 }
 
-/** Reads and validates SMTP env. Returns null when not configured. */
-export function getMailerConfig(): MailerConfig | null {
-  const host = process.env.SMTP_HOST?.trim();
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASS;
-  const fromEmail = process.env.MAIL_FROM_EMAIL?.trim() || user;
+/** Reads and validates SMTP env for one identity. Returns null when not configured. */
+export function getMailerConfig(identity: MailIdentity = "domestic"): MailerConfig | null {
+  const prefix = identity === "export" ? "SMTP_EXPORT_" : "SMTP_";
+  const mailPrefix = identity === "export" ? "MAIL_EXPORT_" : "MAIL_";
+
+  const host =
+    process.env[`${prefix}HOST`]?.trim() ||
+    (identity === "export" ? process.env.SMTP_HOST?.trim() : undefined);
+  const user = process.env[`${prefix}USER`]?.trim();
+  const pass = process.env[`${prefix}PASS`];
+  const fromEmail = process.env[`${mailPrefix}FROM_EMAIL`]?.trim() || user;
 
   if (!host || !user || !pass || !fromEmail) return null;
 
-  const port = Number.parseInt(process.env.SMTP_PORT ?? "587", 10);
+  // A blank .env line sets the variable to "", not undefined — `||`
+  // treats that as absent the same way it does for `host` above.
+  // `??` would not (an empty string is not nullish), which is exactly
+  // the bug this had: SMTP_EXPORT_PORT= left blank was read as "",
+  // parsed to NaN, and silently fell back to 587 instead of the
+  // domestic port.
+  const portEnv =
+    process.env[`${prefix}PORT`]?.trim() ||
+    (identity === "export" ? process.env.SMTP_PORT?.trim() : undefined);
+  const port = Number.parseInt(portEnv || "587", 10);
   const resolvedPort = Number.isFinite(port) ? port : 587;
 
+  const secureEnv =
+    process.env[`${prefix}SECURE`]?.trim() ||
+    (identity === "export" ? process.env.SMTP_SECURE?.trim() : undefined);
+
   return {
+    identity,
     host,
     port: resolvedPort,
     // Port 465 is implicit TLS; 587 upgrades with STARTTLS. Getting this
     // backwards produces a connection that hangs rather than a clear error.
-    secure: process.env.SMTP_SECURE
-      ? process.env.SMTP_SECURE === "true"
-      : resolvedPort === 465,
+    secure: secureEnv ? secureEnv === "true" : resolvedPort === 465,
     user,
     pass,
     fromEmail,
-    fromName: process.env.MAIL_FROM_NAME?.trim() || "PuraVida Natural",
-    replyTo: process.env.MAIL_REPLY_TO?.trim() || null,
+    fromName: process.env[`${mailPrefix}FROM_NAME`]?.trim() || "PuraVida Natural",
+    replyTo: process.env[`${mailPrefix}REPLY_TO`]?.trim() || null,
   };
 }
 
-export function isMailerConfigured(): boolean {
-  return getMailerConfig() !== null;
+export function isMailerConfigured(identity: MailIdentity = "domestic"): boolean {
+  return getMailerConfig(identity) !== null;
 }
 
-let cached: Transporter | null = null;
+const cached: Partial<Record<MailIdentity, Transporter>> = {};
 
 /**
- * Pooled transport.
+ * Pooled transport, one per identity.
  *
  * A campaign batch sends many messages per invocation, and opening a
  * fresh TLS connection for each is both slow and a good way to trip a
  * provider's connection-rate limit.
  */
-export function getTransport(): Transporter {
-  if (cached) return cached;
+export function getTransport(identity: MailIdentity = "domestic"): Transporter {
+  const existing = cached[identity];
+  if (existing) return existing;
 
-  const config = getMailerConfig();
+  const config = getMailerConfig(identity);
   if (!config) {
     throw new Error(
-      "SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_FROM_EMAIL."
+      identity === "export"
+        ? "Export SMTP is not configured. Set SMTP_EXPORT_USER and SMTP_EXPORT_PASS."
+        : "SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_FROM_EMAIL."
     );
   }
 
-  cached = nodemailer.createTransport({
+  const transport = nodemailer.createTransport({
     host: config.host,
     port: config.port,
     secure: config.secure,
@@ -107,18 +146,22 @@ export function getTransport(): Transporter {
     socketTimeout: 30_000,
   });
 
-  return cached;
+  cached[identity] = transport;
+  return transport;
 }
 
 /** Verifies host, TLS and credentials without sending. */
-export async function verifyTransport(): Promise<
-  { ok: true } | { ok: false; error: string }
-> {
-  if (!isMailerConfigured()) {
-    return { ok: false, error: "SMTP is not configured." };
+export async function verifyTransport(
+  identity: MailIdentity = "domestic"
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isMailerConfigured(identity)) {
+    return {
+      ok: false,
+      error: identity === "export" ? "Export SMTP is not configured." : "SMTP is not configured.",
+    };
   }
   try {
-    await getTransport().verify();
+    await getTransport(identity).verify();
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
@@ -153,6 +196,8 @@ export interface SendMailOptions {
   replyTo?: string | null;
   headers?: Record<string, string>;
   attachments?: MailAttachment[];
+  /** Which mailbox sends this. Defaults to the original rk@ mailbox. */
+  identity?: MailIdentity;
 }
 
 export interface SendResult {
@@ -161,10 +206,15 @@ export interface SendResult {
 
 /** Sends one transactional message. Throws on failure; callers decide. */
 export async function sendMail(options: SendMailOptions): Promise<SendResult> {
-  const config = getMailerConfig();
-  if (!config) throw new Error("SMTP is not configured");
+  const identity = options.identity ?? "domestic";
+  const config = getMailerConfig(identity);
+  if (!config) {
+    throw new Error(
+      identity === "export" ? "Export SMTP is not configured" : "SMTP is not configured"
+    );
+  }
 
-  const info = await getTransport().sendMail({
+  const info = await getTransport(identity).sendMail({
     from: { name: config.fromName, address: config.fromEmail },
     to: options.toName
       ? { name: sanitizeHeaderValue(options.toName), address: options.to }
@@ -286,8 +336,11 @@ export function smtpErrorHelp(error: string): string | null {
   return null;
 }
 
-/** Drops the pooled connection. Called when a batch finishes. */
-export function closeTransport(): void {
-  cached?.close();
-  cached = null;
+/** Drops the pooled connection(s). Called when a batch finishes. */
+export function closeTransport(identity?: MailIdentity): void {
+  const identities = identity ? [identity] : MAIL_IDENTITIES;
+  for (const id of identities) {
+    cached[id]?.close();
+    delete cached[id];
+  }
 }

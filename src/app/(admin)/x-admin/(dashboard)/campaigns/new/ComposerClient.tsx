@@ -68,12 +68,18 @@ interface Attachment {
   type: string;
 }
 
+type Identity = "domestic" | "export";
+
+interface IdentityStatus {
+  configured: boolean;
+  fromAddress: string | null;
+  defaultSenderName: string;
+}
+
 interface Props {
   templates: Template[];
   adminEmail: string;
-  mailerConfigured: boolean;
-  fromAddress: string | null;
-  defaultSenderName: string;
+  mailerByIdentity: Record<Identity, IdentityStatus>;
   signatureHtml: string;
 }
 
@@ -101,13 +107,21 @@ function formatSize(bytes: number): string {
 export default function ComposerClient({
   templates,
   adminEmail,
-  mailerConfigured,
-  fromAddress,
-  defaultSenderName,
+  mailerByIdentity,
   signatureHtml,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Which mailbox this campaign sends from: rk@ for the original
+  // India-market catalogue, exports@ for the international batches.
+  // Picked once up front because it decides which recipients make
+  // sense — mixing the two in one send is the thing this exists to
+  // prevent.
+  const [identity, setIdentity] = useState<Identity>("domestic");
+  const mailer = mailerByIdentity[identity];
+  const mailerConfigured = mailer.configured;
+  const fromAddress = mailer.fromAddress;
 
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
@@ -120,7 +134,7 @@ export default function ComposerClient({
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftNotice, setDraftNotice] = useState<string | null>(null);
-  const [senderName, setSenderName] = useState(defaultSenderName);
+  const [senderName, setSenderName] = useState(mailerByIdentity.domestic.defaultSenderName);
   const [batchSize, setBatchSize] = useState(8);
   const [includeSignature, setIncludeSignature] = useState(true);
   // Off by default. The open pixel and rewritten links are two of the
@@ -162,6 +176,15 @@ export default function ComposerClient({
   const [showSettings, setShowSettings] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
+  // Only auto-fill senderName from the identity's default while the
+  // sender hasn't typed their own — switching identity should not
+  // clobber a name they deliberately chose.
+  const senderNameEdited = useRef(false);
+
+  useEffect(() => {
+    if (!senderNameEdited.current) setSenderName(mailer.defaultSenderName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [identity]);
 
   const mode = searchParams.get("mode") === "ids" ? "ids" : "filters";
 
@@ -341,6 +364,7 @@ export default function ComposerClient({
           senderName,
           includeSignature,
           trackOpens,
+          identity,
           leadId: rows[0]?.leadId ?? audience?.firstLeadId ?? undefined,
           sendTestTo,
         }),
@@ -408,6 +432,7 @@ export default function ComposerClient({
           senderName: senderName.trim() || undefined,
           batchSize,
           trackOpens,
+          identity,
           attachments,
           audience: payload,
           startNow,
@@ -452,7 +477,27 @@ export default function ComposerClient({
       <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
         {/* From */}
         <HeaderRow label="From">
-          <span className="text-zinc-300">{fromAddress ?? "Not configured"}</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex overflow-hidden rounded-lg border border-zinc-700 text-xs font-medium">
+              {(["domestic", "export"] as const).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setIdentity(id)}
+                  className={`px-2.5 py-1 transition-colors ${
+                    identity === id
+                      ? "bg-emerald-500 text-white"
+                      : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                  }`}
+                >
+                  {id === "domestic" ? "Domestic (India)" : "Export"}
+                </button>
+              ))}
+            </div>
+            <span className={mailerConfigured ? "text-zinc-300" : "text-amber-300"}>
+              {fromAddress ?? `${identity === "export" ? "Export" : "Domestic"} SMTP not configured`}
+            </span>
+          </div>
         </HeaderRow>
 
         {/* To */}
@@ -819,7 +864,10 @@ export default function ComposerClient({
           <Field label="Your name" hint="Signs the message.">
             <input
               value={senderName}
-              onChange={(e) => setSenderName(e.target.value)}
+              onChange={(e) => {
+                senderNameEdited.current = true;
+                setSenderName(e.target.value);
+              }}
               className={inputClass}
             />
           </Field>

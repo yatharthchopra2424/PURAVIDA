@@ -29,7 +29,8 @@ interface ExtractionFile {
 }
 
 /** Snake-cases one extracted lead into a `leads` row. */
-function toRow(lead: NormalizedLead) {
+function toRow(lead: NormalizedLead, hasRawColumns: boolean) {
+  const phones = lead.phones ?? [];
   return {
     source: lead.source,
     source_ref: lead.sourceRef,
@@ -42,7 +43,9 @@ function toRow(lead: NormalizedLead) {
     company_email: lead.companyEmail,
     mobile: lead.mobile,
     mobile_e164: lead.mobileE164,
-    phone: lead.phone,
+    // Without the `phones` column every number still has to land
+    // somewhere: a contact with several is kept as one " / "-joined value.
+    phone: hasRawColumns || phones.length <= 1 ? lead.phone : phones.join(" / "),
     website: lead.website,
     address: lead.address,
     city: lead.city,
@@ -55,6 +58,14 @@ function toRow(lead: NormalizedLead) {
     product_categories: lead.productCategories,
     product_category_raw: lead.productCategoryRaw,
     parse_warnings: lead.parseWarnings,
+    ...(hasRawColumns
+      ? {
+          phones,
+          raw_data: lead.rawData ?? {},
+          source_files: lead.sourceFiles ?? [],
+          country_source: lead.countrySource ?? null,
+        }
+      : {}),
   };
 }
 
@@ -76,7 +87,9 @@ async function main() {
   }
 
   const payload: ExtractionFile = JSON.parse(fs.readFileSync(filePath, "utf8"));
-  const rows = payload.leads.map(toRow);
+  const probe = await serviceClient().from("leads").select("raw_data, phones").limit(1);
+  const hasRawColumns = !probe.error;
+  const rows = payload.leads.map((l) => toRow(l, hasRawColumns));
 
   console.log(`\n  ${path.basename(filePath)}`);
   console.log(`  source     ${payload.source}`);

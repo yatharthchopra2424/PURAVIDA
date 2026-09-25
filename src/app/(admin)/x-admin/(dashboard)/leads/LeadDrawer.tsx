@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import {
   LEAD_STATUSES,
+  LEAD_MARKETS,
+  MARKET_LABELS,
   STATUS_LABELS,
   TAG_LABELS,
   primaryEmail,
@@ -49,6 +51,40 @@ export default function LeadDrawer({ lead, onClose, onUpdated }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [raw, setRaw] = useState<Record<string, unknown>[] | null | undefined>(undefined);
+
+  // Every distinct number on the record, whichever column it landed in.
+  const allPhones = (() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    const candidates = [
+      ...(lead.phones ?? []),
+      ...String(lead.phone ?? "").split(/\s\/\s|[;,]/),
+      lead.mobile_e164 ?? "",
+      lead.mobile ?? "",
+    ];
+    for (const c of candidates) {
+      const v = c.trim();
+      const key = v.replace(/\D/g, "").slice(-10);
+      if (key.length >= 7 && !seen.has(key)) {
+        seen.add(key);
+        out.push(v);
+      }
+    }
+    return out;
+  })();
+
+  async function loadRaw() {
+    if (raw !== undefined) return;
+    try {
+      const res = await fetch(`/api/admin/leads/${lead.id}`);
+      const json = await res.json();
+      const rd = json.raw_data;
+      setRaw(Array.isArray(rd) ? rd : rd ? [rd] : null);
+    } catch {
+      setRaw(null);
+    }
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -149,17 +185,14 @@ export default function LeadDrawer({ lead, onClose, onUpdated }: Props) {
               </Row>
             )}
 
-            {lead.mobile_e164 && (
-              <Row icon={Phone}>
-                <a href={`tel:${lead.mobile_e164}`} className="text-zinc-300 hover:underline">
-                  {lead.mobile_e164}
+            {allPhones.map((ph, i) => (
+              <Row key={ph + i} icon={Phone}>
+                <a href={`tel:${ph.replace(/[^+\d]/g, "")}`} className="text-zinc-300 hover:underline">
+                  {ph}
                 </a>
-                <CopyButton
-                  copied={copied === "phone"}
-                  onClick={() => copy(lead.mobile_e164!, "phone")}
-                />
+                <CopyButton copied={copied === "phone" + i} onClick={() => copy(ph, "phone" + i)} />
               </Row>
-            )}
+            ))}
 
             {lead.website && (
               <Row icon={Globe}>
@@ -175,6 +208,12 @@ export default function LeadDrawer({ lead, onClose, onUpdated }: Props) {
             )}
 
             {location && <Row icon={MapPin}>{location}</Row>}
+            {lead.address && (
+              <p className="pl-6 text-xs text-zinc-500">
+                {lead.address}
+                {lead.postal_code ? ` — ${lead.postal_code}` : ""}
+              </p>
+            )}
 
             {lead.stall_no && (
               <p className="pl-6 text-xs text-zinc-500">
@@ -257,6 +296,34 @@ export default function LeadDrawer({ lead, onClose, onUpdated }: Props) {
             </section>
           )}
 
+          {/* Where this record came from */}
+          {((lead.source_files ?? []).length > 0 || lead.country_source) && (
+            <section>
+              <SectionLabel>Source</SectionLabel>
+              <p className="text-xs text-zinc-400">
+                {(lead.source_files ?? []).join(", ")}
+                {lead.country_source ? ` · country from ${lead.country_source}` : ""}
+              </p>
+              <details className="mt-2" onToggle={(e) => (e.currentTarget as HTMLDetailsElement).open && loadRaw()}>
+                <summary className="cursor-pointer text-xs text-zinc-500 hover:text-zinc-300">
+                  Original source row
+                </summary>
+                {raw === undefined && <p className="mt-2 text-xs text-zinc-500">Loading…</p>}
+                {raw === null && <p className="mt-2 text-xs text-zinc-500">No source row stored.</p>}
+                {raw?.map((row, i) => (
+                  <dl key={i} className="mt-2 space-y-0.5 rounded border border-zinc-800 p-2 text-xs">
+                    {Object.entries(row).map(([k, v]) => (
+                      <div key={k} className="flex gap-2">
+                        <dt className="w-28 shrink-0 text-zinc-500">{k}</dt>
+                        <dd className="break-words text-zinc-300">{String(v)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ))}
+              </details>
+            </section>
+          )}
+
           {/* Catalogue profile */}
           {lead.company_profile && (
             <section>
@@ -278,6 +345,26 @@ export default function LeadDrawer({ lead, onClose, onUpdated }: Props) {
 
           {/* CRM */}
           <section className="space-y-3 border-t border-zinc-800 pt-5">
+            <div>
+              <SectionLabel>Market</SectionLabel>
+              <select
+                value={lead.market}
+                disabled={saving}
+                onChange={(e) => patch({ market: e.target.value })}
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-500/50 disabled:opacity-50"
+              >
+                {LEAD_MARKETS.map((m) => (
+                  <option key={m} value={m}>
+                    {MARKET_LABELS[m] ?? m}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-xs text-zinc-600">
+                Auto-classified from country — override here if it&apos;s wrong. Decides which
+                mailbox (rk@ vs exports@) a campaign to this lead sends from.
+              </p>
+            </div>
+
             <div>
               <SectionLabel>Status</SectionLabel>
               <select

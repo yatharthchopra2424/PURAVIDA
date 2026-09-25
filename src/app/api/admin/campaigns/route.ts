@@ -15,6 +15,8 @@ const CampaignCreateSchema = z.object({
   bodyHtml: z.string().trim().min(1).max(200_000),
   senderName: z.string().trim().max(120).optional(),
   replyTo: z.email().max(200).optional().or(z.literal("")),
+  /** Which mailbox this sends from: rk@ for domestic leads, exports@ for international ones. */
+  identity: z.enum(["domestic", "export"]).default("domestic"),
   batchSize: z.number().int().min(1).max(200).optional(),
   /** Open pixel + click rewriting. Costs inbox placement; default off. */
   trackOpens: z.boolean().optional(),
@@ -73,7 +75,7 @@ export async function GET(req: Request) {
     .from("email_campaigns")
     .select(
       "id, name, subject, status, batch_size, total_count, sent_count, failed_count, " +
-        "opened_count, clicked_count, created_by, created_at, started_at, completed_at"
+        "opened_count, clicked_count, created_by, created_at, started_at, completed_at, identity"
     )
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -105,7 +107,7 @@ export async function POST(req: Request) {
   }
 
   const input = parsed.data;
-  const mailer = getMailerConfig();
+  const mailer = getMailerConfig(input.identity);
 
   // Refuse to queue a campaign that can never be sent — otherwise the
   // failure surfaces later as hundreds of failed rows.
@@ -113,7 +115,9 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_FROM_EMAIL, then try again.",
+          input.identity === "export"
+            ? "Export SMTP is not configured. Set SMTP_EXPORT_USER and SMTP_EXPORT_PASS, then try again."
+            : "SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_FROM_EMAIL, then try again.",
       },
       { status: 400 }
     );
@@ -152,6 +156,7 @@ export async function POST(req: Request) {
       from_name: senderName,
       from_email: mailer?.fromEmail ?? null,
       reply_to: input.replyTo || mailer?.replyTo || null,
+      identity: input.identity,
       batch_size: input.batchSize ?? 8,
       attachments: input.attachments ?? [],
       track_opens: input.trackOpens ?? false,

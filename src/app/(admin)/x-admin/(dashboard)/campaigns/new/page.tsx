@@ -21,15 +21,25 @@ export default async function NewCampaignPage() {
     auth.auth.getUser(),
   ]);
 
-  const mailer = getMailerConfig();
+  const domestic = getMailerConfig("domestic");
+  const exportMailer = getMailerConfig("export");
 
   return (
     <ComposerClient
       templates={templates ?? []}
       adminEmail={user?.email ?? ""}
-      mailerConfigured={isMailerConfigured()}
-      fromAddress={mailer ? `${mailer.fromName} <${mailer.fromEmail}>` : null}
-      defaultSenderName={mailer?.fromName ?? ""}
+      mailerByIdentity={{
+        domestic: {
+          configured: isMailerConfigured("domestic"),
+          fromAddress: domestic ? `${domestic.fromName} <${domestic.fromEmail}>` : null,
+          defaultSenderName: domestic?.fromName ?? "",
+        },
+        export: {
+          configured: isMailerConfigured("export"),
+          fromAddress: exportMailer ? `${exportMailer.fromName} <${exportMailer.fromEmail}>` : null,
+          defaultSenderName: exportMailer?.fromName ?? "",
+        },
+      }}
       // Rendered server-side from the app's own signature module so the
       // composer shows exactly the markup that will be sent, rather
       // than a second approximation of it that can drift.

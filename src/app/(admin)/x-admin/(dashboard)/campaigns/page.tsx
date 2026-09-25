@@ -19,6 +19,7 @@ interface CampaignSummary {
   clicked_count: number;
   created_at: string;
   created_by: string | null;
+  identity: "domestic" | "export" | null;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -40,7 +41,7 @@ export default async function CampaignsPage() {
   const { data, error } = await supabase
     .from("email_campaigns")
     .select(
-      "id, name, subject, status, total_count, sent_count, failed_count, opened_count, clicked_count, created_at, created_by"
+      "id, name, subject, status, total_count, sent_count, failed_count, opened_count, clicked_count, created_at, created_by, identity"
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -54,8 +55,11 @@ export default async function CampaignsPage() {
           <h1 className="font-heading text-2xl font-bold text-white">Campaigns</h1>
           <p className="mt-0.5 text-sm text-zinc-400">
             {campaigns.length} campaign{campaigns.length === 1 ? "" : "s"}
-            {!isMailerConfigured() && (
-              <span className="text-amber-400"> · SMTP not configured</span>
+            {!isMailerConfigured("domestic") && (
+              <span className="text-amber-400"> · Domestic SMTP not configured</span>
+            )}
+            {!isMailerConfigured("export") && (
+              <span className="text-amber-400"> · Export SMTP not configured</span>
             )}
           </p>
         </div>
@@ -120,13 +124,24 @@ export default async function CampaignsPage() {
                     </Link>
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-md px-2 py-0.5 text-xs font-medium ${
-                        STATUS_STYLES[campaign.status] ?? STATUS_STYLES.draft
-                      }`}
-                    >
-                      {campaign.status}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={`rounded-md px-2 py-0.5 text-xs font-medium ${
+                          STATUS_STYLES[campaign.status] ?? STATUS_STYLES.draft
+                        }`}
+                      >
+                        {campaign.status}
+                      </span>
+                      <span
+                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                          campaign.identity === "export"
+                            ? "bg-sky-500/15 text-sky-300"
+                            : "bg-zinc-700/40 text-zinc-400"
+                        }`}
+                      >
+                        {campaign.identity === "export" ? "Export" : "Domestic"}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right text-zinc-300">
                     {campaign.total_count.toLocaleString()}

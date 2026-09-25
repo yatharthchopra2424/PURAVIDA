@@ -19,7 +19,9 @@ import { renderCampaignEmail } from "@/lib/campaign-render";
 import {
   sendCampaignMail,
   isMailerConfigured,
+  getMailerConfig,
   type MailAttachment,
+  type MailIdentity,
 } from "@/lib/mailer";
 
 import {
@@ -228,6 +230,7 @@ interface CampaignRow {
   failed_count: number;
   attachments: CampaignAttachment[] | null;
   track_opens: boolean | null;
+  identity: MailIdentity;
 }
 
 /**
@@ -283,7 +286,7 @@ export async function dispatchCampaign(campaignId: string): Promise<DispatchResu
   const { data: campaign, error: campaignError } = await supabase
     .from("email_campaigns")
     .select(
-      "id, subject, body_html, from_name, status, batch_size, sent_count, failed_count, attachments, track_opens"
+      "id, subject, body_html, from_name, status, batch_size, sent_count, failed_count, attachments, track_opens, identity"
     )
     .eq("id", campaignId)
     .single();
@@ -306,11 +309,16 @@ export async function dispatchCampaign(campaignId: string): Promise<DispatchResu
     };
   }
 
-  if (!isMailerConfigured()) {
+  const identity: MailIdentity = row.identity ?? "domestic";
+
+  if (!isMailerConfigured(identity)) {
     throw new Error(
-      "SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_FROM_EMAIL."
+      identity === "export"
+        ? "Export SMTP is not configured. Set SMTP_EXPORT_USER and SMTP_EXPORT_PASS."
+        : "SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_FROM_EMAIL."
     );
   }
+  const mailerConfig = getMailerConfig(identity)!;
 
   const { data: queued, error: queueError } = await supabase
     .from("email_sends")
@@ -384,6 +392,7 @@ export async function dispatchCampaign(campaignId: string): Promise<DispatchResu
         trackingId: item.tracking_id,
         unsubscribeToken: item.unsubscribe_token,
         tracking: row.track_opens === true,
+        fromEmail: mailerConfig.fromEmail,
       });
 
       const result = await sendCampaignMail({
@@ -394,6 +403,7 @@ export async function dispatchCampaign(campaignId: string): Promise<DispatchResu
         text: rendered.text,
         unsubscribeUrl: rendered.unsubscribeUrl,
         attachments,
+        identity,
       });
 
       await supabase

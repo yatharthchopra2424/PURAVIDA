@@ -45,6 +45,7 @@ next-env.d.ts
 # The PDF also must never sit in /public — anything there is served at a
 # public URL and would be downloadable from the live site.
 /docs/catalogues/
+/docs/raw-leads/
 /scripts/leads/out/
 
 # Env backups made during migrations — real secrets, never commit.

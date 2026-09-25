@@ -10,6 +10,7 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "leads:extract": "tsx scripts/leads/extract-catalog.ts",
+    "leads:extract-raw": "tsx scripts/leads/extract-raw-folder.ts",
     "leads:import": "tsx scripts/leads/import-leads.ts",
     "leads:enrich": "tsx scripts/leads/enrich-leads.ts",
     "leads:check": "tsx scripts/leads/__checks__/render-check.ts",
@@ -19,6 +20,10 @@
     "admin:data": "tsx scripts/check-admin-data.ts",
     "mail:diagnose": "tsx scripts/diagnose-mail.ts",
     "leads:repair-products": "tsx scripts/leads/repair-products.ts",
+    "leads:backfill-market": "tsx scripts/leads/backfill-market.ts",
+    "leads:backfill-gaps": "tsx scripts/leads/backfill-gaps.ts",
+    "leads:apply-raw": "tsx scripts/leads/apply-raw-enrichment.ts",
+    "leads:verify-ingestion": "tsx scripts/leads/verify-ingestion.ts",
     "verify": "tsx scripts/verify-system.ts"
   },
   "dependencies": {
@@ -35,8 +40,10 @@
     "critters": "^0.0.23",
     "framer-motion": "^12.43.0",
     "gsap": "^3.14.2",
+    "jszip": "^3.10.2",
     "lenis": "^1.3.17",
     "lucide-react": "^0.563.0",
+    "mammoth": "^1.12.3",
     "next": "^16.3.1",
     "nodemailer": "^10.0.9",
     "openai": "^7.15.0",
@@ -44,6 +51,8 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwind-merge": "^3.4.0",
+    "word-extractor": "^1.0.4",
+    "xlsx": "^0.18.5",
     "zod": "^4.4.3",
     "zustand": "^5.0.11"
   },

@@ -27,10 +27,10 @@
  * Cost control: only rows still marked `pending` are sent.
  */
 
-import OpenAI from "openai";
 import { loadEnv, parseArgs, requireEnv, serviceClient } from "./_env";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { snapAll } from "./product-match";
+import { KeyPool } from "./key-pool";
 
 // ── Controlled vocabularies ──────────────────────────────────
 // Imported from the app rather than redeclared: the admin panel filters
@@ -43,6 +43,7 @@ import {
   LEAD_SENIORITY as SENIORITY,
   LEAD_RELATIONSHIPS as RELATIONSHIP,
   LEAD_PRIORITIES as PRIORITY,
+  classifyLeadMarket,
 } from "../../src/lib/leads";
 
 // ── Model I/O ────────────────────────────────────────────────
@@ -142,6 +143,7 @@ interface LeadRow {
   state: string | null;
   country: string | null;
   website: string | null;
+  address: string | null;
   company_profile: string | null;
   product_categories: string[] | null;
   product_category_raw: string | null;
@@ -160,11 +162,12 @@ function buildUserPrompt(lead: LeadRow): string {
     `Contact email: ${lead.email ?? "(none)"}`,
     `Company email: ${lead.company_email ?? "(none)"}`,
     `Website: ${lead.website ?? "(none)"}`,
+    `Postal address: ${lead.address?.slice(0, 300) ?? "(none)"}`,
     `Location as parsed: city=${lead.city ?? "?"} state=${lead.state ?? "?"} country=${lead.country ?? "?"}`,
     `Declared product categories: ${categories || "(none)"}`,
     `Parser warnings: ${(lead.parse_warnings ?? []).join(", ") || "(none)"}`,
     ``,
-    `Company profile as printed in the catalogue:`,
+    `Notes on the company (catalogue profile, or our own sales notes):`,
     lead.company_profile?.slice(0, 2500) ?? "(no profile text)",
   ].join("\n");
 }
@@ -311,17 +314,24 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const DEFAULT_MAX_TOKENS = 3000;
 
 async function enrichOne(
-  client: OpenAI,
+  pool: KeyPool,
   model: string,
   systemPrompt: string,
   lead: LeadRow,
   maxTokens: number
 ): Promise<Enrichment> {
   let lastError: unknown;
+  // Keys this lead has already been refused by, so the retry goes to a
+  // different one instead of queueing behind the same throttled key.
+  const avoid = new Set<number>();
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  // A 429 no longer means "sleep and hope": the pool already keeps every
+  // key under its per-minute limit, so a 429 that still happens marks
+  // that key as cooling and this lead simply moves to another key.
+  for (let attempt = 1; attempt <= 25; attempt++) {
+    const slot = await pool.acquire(avoid);
     try {
-      const completion = await client.chat.completions.create({
+      const completion = await slot.client.chat.completions.create({
         model,
         messages: [
           { role: "system", content: systemPrompt },
@@ -345,6 +355,7 @@ async function enrichOne(
       // broken" and "raise --max-tokens", which are very different
       // things to be told at 3am with 600 rows queued.
       if (choice?.finish_reason === "length") {
+        pool.success(slot.index);
         throw new Error(
           `response truncated at max_tokens=${maxTokens} (reasoning consumed the budget) — re-run with --max-tokens ${maxTokens * 2}`
         );
@@ -352,11 +363,29 @@ async function enrichOne(
 
       const text = choice?.message?.content;
       if (!text) throw new Error("empty response");
-      return validate(extractJson(text));
+      const result = validate(extractJson(text));
+      pool.success(slot.index);
+      return result;
     } catch (err) {
       lastError = err;
-      // Rate limits and transient 5xx are the common case; back off.
-      if (attempt < 3) await sleep(attempt * 2000);
+      const message = err instanceof Error ? err.message : String(err);
+      const status = (err as { status?: number }).status;
+
+      if (status === 429 || /^429\b/.test(message) || /too many requests/i.test(message)) {
+        pool.rateLimited(slot.index);
+        avoid.add(slot.index);
+        continue; // straight to another key, no sleep
+      }
+      if (status === 401 || status === 403 || /^40[13]\b/.test(message)) {
+        if (pool.dead(slot.index)) {
+          console.log(`\n  ${slot.label} was rejected (${status ?? message.slice(0, 3)}) — dropping it for this run.`);
+        }
+        avoid.add(slot.index);
+        continue;
+      }
+
+      pool.failure(slot.index);
+      if (attempt < 25) await sleep(Math.min(1000 * attempt, 5000));
     }
   }
 
@@ -367,13 +396,34 @@ async function main() {
   loadEnv();
   const args = parseArgs();
 
-  const apiKey = requireEnv("NVIDIA_API_KEY");
+  // NVIDIA's per-key rate limit (40 requests/minute) is the real ceiling
+  // on throughput, so keys (NVIDIA_API_KEY, NVIDIA_API_KEY_2 … _8) are
+  // pooled: each request takes whichever key has headroom at that moment
+  // (see key-pool.ts), rather than being pinned to one. Identical values
+  // pasted under two names count once.
+  const seen = new Set<string>();
+  const keyEntries: { label: string; apiKey: string }[] = [];
+  for (let n = 1; n <= 8; n++) {
+    const label = n === 1 ? "NVIDIA_API_KEY" : `NVIDIA_API_KEY_${n}`;
+    const apiKey = process.env[label]?.trim();
+    if (apiKey && !seen.has(apiKey)) {
+      seen.add(apiKey);
+      keyEntries.push({ label, apiKey });
+    }
+  }
+  if (keyEntries.length === 0) requireEnv("NVIDIA_API_KEY"); // exits with the usual message
   const model = process.env.NVIDIA_MODEL?.trim() || "nvidia/nemotron-3-super-120b-a12b";
   const baseURL =
     process.env.NVIDIA_BASE_URL?.trim() || "https://integrate.api.nvidia.com/v1";
 
   const limit = args.limit ? Number(args.limit) : Infinity;
-  const concurrency = Math.max(1, Math.min(12, Number(args.concurrency ?? 4)));
+  const rpm = Math.max(1, Number(args.rpm ?? 40));
+  const pool = new KeyPool(keyEntries, baseURL, rpm);
+  // Workers only need to be numerous enough to keep every key's window
+  // full: at ~1 minute per reasoning-model call, holding 38 requests/min
+  // on a key takes roughly that many calls in flight. The pool, not this
+  // number, is what enforces the limit.
+  const workersPerKey = Math.max(1, Number(args["workers-per-key"] ?? 10));
   const maxTokens = Math.max(
     800,
     Number(args["max-tokens"] ?? DEFAULT_MAX_TOKENS)
@@ -381,6 +431,36 @@ async function main() {
   const redo = typeof args.redo === "string" ? args.redo : null;
 
   const supabase = serviceClient();
+
+  // `market` was added after this script first shipped; a database that
+  // hasn't had the updated leads-schema.sql run yet doesn't have the
+  // column. Checked once up front rather than letting every single row
+  // fail its write and land in `failed` over something that isn't
+  // actually about that lead.
+  const hasMarketColumn = await (async () => {
+    const { error } = await supabase.from("leads").select("market").limit(1);
+    return !error;
+  })();
+  if (!hasMarketColumn) {
+    console.log(
+      "\n  Note: `leads.market` does not exist yet (run the updated leads-schema.sql in Supabase) — enriching without it for now.\n"
+    );
+  }
+
+  // `--redo-model <substring>` re-queues only rows enriched by a model
+  // whose name contains it (e.g. `nano`), leaving the rest untouched.
+  if (typeof args["redo-model"] === "string") {
+    const { error, count } = await supabase
+      .from("leads")
+      .update({ ai_status: "pending", ai_error: null }, { count: "exact" })
+      .eq("ai_status", "done")
+      .ilike("ai_model", `%${args["redo-model"]}%`);
+    if (error) {
+      console.error(`  Could not reset: ${error.message}`);
+      process.exit(1);
+    }
+    console.log(`\n  Re-queued ${count ?? 0} leads enriched by *${args["redo-model"]}*.`);
+  }
 
   // `--redo` re-queues already-processed rows. Re-running the whole
   // catalogue costs real money, so "all" asks before it does that.
@@ -406,18 +486,31 @@ async function main() {
 
   const catalogue = await loadCatalogue(supabase);
   const systemPrompt = buildSystemPrompt(catalogue.prompt);
-  const client = new OpenAI({ apiKey, baseURL });
-
-  const { data: pending, error } = await supabase
-    .from("leads")
-    .select(
-      "id, company_name, contact_name, designation, email, company_email, city, state, country, website, company_profile, product_categories, product_category_raw, parse_warnings"
-    )
-    .eq("ai_status", "pending")
-    // Cheapest wins first: a lead with profile text is worth more than
-    // one without, and a truncated run should have done the good ones.
-    .order("company_profile", { ascending: false, nullsFirst: false })
-    .limit(Number.isFinite(limit) ? limit : 5000);
+  // The API returns at most 1000 rows per request, so page until the
+  // limit (or the end). Ordered by profile then id so paging is stable.
+  const pending: unknown[] = [];
+  let error: { message: string } | null = null;
+  const want = Number.isFinite(limit) ? limit : 100000;
+  for (let from = 0; pending.length < want; from += 1000) {
+    const page = await supabase
+      .from("leads")
+      .select(
+        "id, company_name, contact_name, designation, email, company_email, city, state, country, website, address, company_profile, product_categories, product_category_raw, parse_warnings"
+      )
+      .eq("ai_status", "pending")
+      // Cheapest wins first: a lead with profile text is worth more than
+      // one without, and a truncated run should have done the good ones.
+      .order("company_profile", { ascending: false, nullsFirst: false })
+      .order("id")
+      .range(from, from + 999);
+    if (page.error) {
+      error = page.error;
+      break;
+    }
+    pending.push(...(page.data ?? []));
+    if ((page.data?.length ?? 0) < 1000) break;
+  }
+  pending.length = Math.min(pending.length, want);
 
   if (error) {
     console.error(`\n  Could not read leads: ${error.message}`);
@@ -435,7 +528,48 @@ async function main() {
 
   console.log(`\n  Model        ${model}`);
   console.log(`  Pending      ${leads.length} leads`);
-  console.log(`  Concurrency  ${concurrency}\n`);
+  console.log(`  Keys         ${pool.size} (${keyEntries.map((k) => k.label).join(", ")})`);
+  console.log(
+    `  Rate limit   ${rpm}/min per key → up to ${pool.capacityPerMinute}/min pooled, ${workersPerKey * pool.size} workers\n`
+  );
+
+  // `--compare N --vs <model>`: run the first N pending leads through the
+  // current model and a second one, print how they differ, write nothing.
+  if (args.compare) {
+    const n = Math.min(Number(args.compare) || 30, leads.length);
+    const vs = String(args.vs ?? "nvidia/nemotron-3-super-120b-a12b");
+    const sample = leads.slice(0, n);
+    const t = async (m: string) => {
+      const t0 = Date.now();
+      const out = await Promise.all(
+        sample.map((l) => enrichOne(pool, m, systemPrompt, l, maxTokens).then((r) => r, () => null))
+      );
+      return { out, secs: (Date.now() - t0) / 1000 };
+    };
+    console.log(`  Comparing ${model} vs ${vs} on ${n} leads (nothing is saved)…\n`);
+    const [a, b] = [await t(model), await t(vs)];
+    const same = (x: unknown, y: unknown) => JSON.stringify(x) === JSON.stringify(y);
+    const stats = { both: 0, segment: 0, tags: 0, priority: 0, country: 0, icpClose: 0, products: 0 };
+    sample.forEach((l, i) => {
+      const x = a.out[i], y = b.out[i];
+      if (!x || !y) return;
+      stats.both++;
+      if (x.segment === y.segment) stats.segment++;
+      if (same([...x.tags].sort(), [...y.tags].sort())) stats.tags++;
+      if (x.priority === y.priority) stats.priority++;
+      if ((x.country ?? "") === (y.country ?? "")) stats.country++;
+      if (Math.abs(x.icp_score - y.icp_score) <= 1) stats.icpClose++;
+      if (same([...x.suggested_products].sort(), [...y.suggested_products].sort())) stats.products++;
+      if (x.segment !== y.segment || (x.country ?? "") !== (y.country ?? "")) {
+        console.log(`  ${l.company_name}\n    A: ${x.segment} | ${x.country} | ${x.tags.join(",")}\n    B: ${y.segment} | ${y.country} | ${y.tags.join(",")}`);
+      }
+    });
+    const pct = (v: number) => `${Math.round((v / Math.max(stats.both, 1)) * 100)}%`;
+    console.log(`\n  Leads both models answered: ${stats.both}/${n}   (A ok ${a.out.filter(Boolean).length}, B ok ${b.out.filter(Boolean).length})`);
+    console.log(`  Time: A ${a.secs.toFixed(0)}s   B ${b.secs.toFixed(0)}s`);
+    console.log(`  Agree — segment ${pct(stats.segment)} · tags ${pct(stats.tags)} · priority ${pct(stats.priority)} · country ${pct(stats.country)} · icp±1 ${pct(stats.icpClose)} · products ${pct(stats.products)}\n`);
+    return;
+  }
 
   let done = 0;
   let failed = 0;
@@ -454,7 +588,7 @@ async function main() {
       const lead = leads[cursor++];
 
       try {
-        const result = await enrichOne(client, model, systemPrompt, lead, maxTokens);
+        const result = await enrichOne(pool, model, systemPrompt, lead, maxTokens);
 
         const flags = new Set(result.data_flags);
         if (
@@ -491,6 +625,18 @@ async function main() {
             city_verified: result.city,
             state_verified: result.state,
             country_verified: result.country,
+            // Domestic (India) vs export, derived from whichever country
+            // is freshest — the AI's corrected value beats the raw one.
+            ...(hasMarketColumn
+              ? {
+                  market: classifyLeadMarket({
+                    country: result.country || lead.country,
+                    email: lead.email,
+                    company_email: lead.company_email,
+                    website: lead.website,
+                  }),
+                }
+              : {}),
             ai_raw: result as unknown as Record<string, unknown>,
           })
           .eq("id", lead.id);
@@ -522,7 +668,15 @@ async function main() {
     }
   }
 
-  await Promise.all(Array.from({ length: concurrency }, worker));
+  // A shared pool of workers, none tied to a key — each request asks the
+  // pool for a key at the moment it sends, so a key that cools down or
+  // dies just stops being picked and the others absorb its share.
+  const workers = Array.from(
+    { length: Math.min(leads.length, workersPerKey * pool.size) },
+    () => worker()
+  );
+  await Promise.all(workers);
+  console.log(`\n\n  Per key:\n  ${pool.report()}`);
 
   console.log(`\n\n  Enriched ${done}, failed ${failed}.`);
 

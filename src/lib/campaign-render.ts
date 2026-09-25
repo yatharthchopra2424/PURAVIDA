@@ -387,6 +387,8 @@ export interface RenderOptions {
   senderName: string;
   trackingId: string;
   unsubscribeToken: string;
+  /** The mailbox this is actually sent from — shown as the signature's contact line. Defaults to the standard rk@ address. */
+  fromEmail?: string;
   /** Previews skip the pixel and the link rewriting. */
   preview?: boolean;
   /** Set false when the draft already carries its own sign-off. */
@@ -421,7 +423,7 @@ export function renderCampaignEmail(options: RenderOptions): RenderedEmail {
   // pastes their own sign-off does not get two.
   const signature = options.includeSignature === false
     ? ""
-    : `<div style="${SIGNATURE_STYLE}">${renderSignature({ senderName: options.senderName }).html}</div>`;
+    : `<div style="${SIGNATURE_STYLE}">${renderSignature({ senderName: options.senderName, contactEmail: options.fromEmail }).html}</div>`;
 
   // No unsubscribe link, at the owner's explicit direction.
   //
@@ -449,7 +451,7 @@ export function renderCampaignEmail(options: RenderOptions): RenderedEmail {
     "",
     options.includeSignature === false
       ? ""
-      : renderSignature({ senderName: options.senderName }).text,
+      : renderSignature({ senderName: options.senderName, contactEmail: options.fromEmail }).text,
   ].join("\n");
 
   return { subject, html, text, unsubscribeUrl: unsubUrl };

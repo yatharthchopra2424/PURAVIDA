@@ -175,6 +175,20 @@ export interface NormalizedLead {
   /** Unparsed `Product Category` value, molecule lists included — the AI step reads it. */
   productCategoryRaw: string | null;
   parseWarnings: string[];
+
+  // ── Raw-folder extractors only (spreadsheets/docs/PDFs) ──────────
+  /** Every original cell of the row this lead came from, keyed by its column header. */
+  rawData?: Record<string, string> | null;
+  /** Which kind of evidence supplied `country` (see country-data.ts CountrySource). */
+  countrySource?: string | null;
+  /** Free-text notes/brief from the source ("Distributing company based in Malaysia"). */
+  remarks?: string | null;
+  /** What they buy/make, from Product/Item/Importing columns. */
+  productInterest?: string | null;
+  /** Every file/sheet this email was found in, once duplicates are merged. */
+  sourceFiles?: string[];
+  /** Every phone number found for this contact, across every row/file it appears in. */
+  phones?: string[];
 }
 
 // ── PDF → per-page positioned lines ──────────────────────────

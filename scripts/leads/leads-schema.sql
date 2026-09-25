@@ -290,6 +290,36 @@ CREATE TABLE IF NOT EXISTS public.email_suppressions (
 
 
 -- ============================================================
+-- data_ingestion_runs — one row per raw-folder extraction
+-- ============================================================
+-- extract-raw-folder.ts writes one of these at the end of every run
+-- instead of leaving the report only in a terminal that closes. The
+-- admin's Data Sources page reads this table directly, and
+-- verify-ingestion.ts fills in `validated`/`validation_notes` after
+-- independently re-checking the run's own numbers.
+CREATE TABLE IF NOT EXISTS public.data_ingestion_runs (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  source_folder    text NOT NULL,
+  started_at       timestamptz NOT NULL,
+  finished_at      timestamptz NOT NULL DEFAULT now(),
+
+  -- One entry per file scanned: { file, kind, status, leadsFound, error? }
+  files            jsonb NOT NULL DEFAULT '[]'::jsonb,
+  -- { rawRows, uniqueEmails, inBatchDuplicates, alreadyInDb, newLeads }
+  totals           jsonb NOT NULL DEFAULT '{}'::jsonb,
+
+  validated        boolean NOT NULL DEFAULT false,
+  validated_at     timestamptz,
+  -- What verify-ingestion.ts found, good or bad — human-readable lines.
+  validation_notes text[] NOT NULL DEFAULT '{}',
+
+  created_at       timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS data_ingestion_runs_created_idx ON public.data_ingestion_runs (created_at DESC);
+
+
+-- ============================================================
 -- Migrations for databases created before a column existed
 -- ============================================================
 -- CREATE TABLE IF NOT EXISTS does nothing when the table is already
@@ -307,6 +337,40 @@ ALTER TABLE public.email_sends
 -- per campaign rather than always on.
 ALTER TABLE public.email_campaigns
   ADD COLUMN IF NOT EXISTS track_opens boolean NOT NULL DEFAULT false;
+
+-- Domestic (rk@, India-market leads) vs export (exports@, international
+-- batches) — two separate mailboxes, chosen per campaign so a reply
+-- always lands where it was actually sent from.
+ALTER TABLE public.email_campaigns
+  ADD COLUMN IF NOT EXISTS identity text NOT NULL DEFAULT 'domestic'
+    CHECK (identity IN ('domestic','export'));
+
+-- Which market a lead belongs to, derived from its country (verified by
+-- AI where available, raw catalogue/spreadsheet value otherwise).
+-- 'unknown' until either extraction or enrichment can tell —
+-- scripts/leads/backfill-market.ts fills existing rows, enrich-leads.ts
+-- keeps it current for every lead it processes from then on.
+ALTER TABLE public.leads
+  ADD COLUMN IF NOT EXISTS market text NOT NULL DEFAULT 'unknown'
+    CHECK (market IN ('domestic','export','unknown'));
+CREATE INDEX IF NOT EXISTS leads_market_idx ON public.leads (market);
+
+-- Everything the raw spreadsheets/docs said about a lead, not just the
+-- fields that have a column of their own.
+--   raw_data        the complete original row, header → cell (price,
+--                   quantity, licence no., earlier email status, …), plus
+--                   __file / __sheet / __row saying exactly where it was
+--   source_files    every file/sheet this address was found in, once the
+--                   same email in several spreadsheets is merged
+--   country_source  what evidence supplied `country` — a country column,
+--                   the address text, a phone code, the email's domain…
+ALTER TABLE public.leads
+  ADD COLUMN IF NOT EXISTS raw_data jsonb NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS source_files text[] NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS country_source text,
+  -- every phone number found for the contact, in the order seen
+  ADD COLUMN IF NOT EXISTS phones text[] NOT NULL DEFAULT '{}';
+CREATE INDEX IF NOT EXISTS leads_country_idx ON public.leads (country);
 
 
 -- ============================================================
@@ -351,19 +415,21 @@ GRANT EXECUTE ON FUNCTION public.increment_campaign_clicks(uuid) TO service_role
 -- ============================================================
 -- Row Level Security — deny all; service role bypasses
 -- ============================================================
-ALTER TABLE public.leads              ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.email_templates    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.email_campaigns    ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.email_sends        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.email_events       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.email_suppressions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.leads               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.email_templates     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.email_campaigns     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.email_sends         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.email_events        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.email_suppressions  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.data_ingestion_runs ENABLE ROW LEVEL SECURITY;
 
 DO $$
 DECLARE t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
     'leads','email_templates','email_campaigns',
-    'email_sends','email_events','email_suppressions'
+    'email_sends','email_events','email_suppressions',
+    'data_ingestion_runs'
   ] LOOP
     EXECUTE format(
       'DROP POLICY IF EXISTS %I ON public.%I',

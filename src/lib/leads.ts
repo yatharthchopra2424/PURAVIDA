@@ -61,6 +61,73 @@ export const LEAD_TAGS = [
   "competitor",
 ] as const;
 
+/**
+ * India-market leads ("domestic", sent from rk@) vs every other country
+ * ("export", sent from exports@). Derived from country — see
+ * classifyMarket() below — never chosen by hand.
+ */
+export const LEAD_MARKETS = ["domestic", "export", "unknown"] as const;
+export type LeadMarket = (typeof LEAD_MARKETS)[number];
+export const MARKET_LABELS: Record<string, string> = {
+  domestic: "Domestic (India)",
+  export: "Export (International)",
+  unknown: "Unclassified",
+};
+
+/** Country names/spellings the catalogue and spreadsheets use for India. */
+const INDIA_NAMES = new Set(["india", "bharat", "in", "ind", "republic of india"]);
+
+/**
+ * Country -> market. The single source both the enrichment script and
+ * the one-off backfill call, so a lead classified today and one
+ * classified after the next enrichment run land the same way.
+ */
+export function classifyMarket(country: string | null | undefined): LeadMarket {
+  const c = country?.trim().toLowerCase();
+  if (!c) return "unknown";
+  return INDIA_NAMES.has(c) ? "domestic" : "export";
+}
+
+// Two-letter domains that are sold worldwide as vanity/brand domains, so
+// their suffix says nothing about where the company is.
+const NON_GEOGRAPHIC_TLDS = new Set([
+  "io", "co", "tv", "me", "ai", "cc", "ly", "fm", "to", "ws", "gg", "vc",
+  "sh", "ac", "im", "nu", "ag", "am", "ms", "tk", "ml", "ga", "cf", "gq",
+  "la", "cx", "pw", "so", "gl", "bz", "ee", "mn", "dj",
+]);
+
+/** `.in` -> domestic, another country's two-letter suffix -> export, `.com`/`.net`/… -> unknown. */
+export function marketFromDomain(address: string | null | undefined): LeadMarket {
+  if (!address) return "unknown";
+  const host = address.includes("@") ? address.split("@").pop()! : address.replace(/^https?:\/\//i, "").split("/")[0];
+  const tld = host.trim().toLowerCase().split(".").pop() ?? "";
+  if (tld === "in") return "domestic";
+  if (tld.length === 2 && !NON_GEOGRAPHIC_TLDS.has(tld)) return "export";
+  return "unknown";
+}
+
+/**
+ * Best available market for a lead: an explicit country wins, then the
+ * country suffix of their email, then of their website. Anything still
+ * ambiguous (a plain .com with no country) stays "unknown" rather than
+ * guessing — it is excluded from both audiences until enrichment or a
+ * manual edit settles it.
+ */
+export function classifyLeadMarket(lead: {
+  country?: string | null;
+  email?: string | null;
+  company_email?: string | null;
+  website?: string | null;
+}): LeadMarket {
+  const byCountry = classifyMarket(lead.country);
+  if (byCountry !== "unknown") return byCountry;
+  for (const source of [lead.email, lead.company_email, lead.website]) {
+    const m = marketFromDomain(source);
+    if (m !== "unknown") return m;
+  }
+  return "unknown";
+}
+
 export const LEAD_PRIORITIES = ["A", "B", "C", "D"] as const;
 export const LEAD_RELATIONSHIPS = ["buyer", "supplier", "both", "not_relevant"] as const;
 export const LEAD_SENIORITY = ["owner", "c_level", "director", "manager", "staff", "unknown"] as const;
@@ -124,7 +191,7 @@ export const STATUS_LABELS: Record<string, string> = {
 /** Columns the admin table reads. Deliberately narrower than `SELECT *`. */
 export const LEAD_TABLE_COLUMNS =
   "id, source, source_page, company_name, contact_name, salutation, designation, " +
-  "email, company_email, mobile, mobile_e164, website, city, state, country, " +
+  "email, company_email, phone, phones, mobile, mobile_e164, address, postal_code, source_files, country_source, website, city, state, country, market, " +
   "city_verified, state_verified, country_verified, hall_no, stall_no, " +
   "product_categories, segment, tags, icp_score, priority, relationship, seniority, " +
   "ai_status, ai_summary, pitch_angle, icebreaker, suggested_products, data_flags, " +
@@ -140,12 +207,19 @@ export interface Lead {
   designation: string | null;
   email: string | null;
   company_email: string | null;
+  phone?: string | null;
+  phones?: string[] | null;
+  address?: string | null;
+  postal_code?: string | null;
+  source_files?: string[] | null;
+  country_source?: string | null;
   mobile: string | null;
   mobile_e164: string | null;
   website: string | null;
   city: string | null;
   state: string | null;
   country: string | null;
+  market: string;
   city_verified: string | null;
   state_verified: string | null;
   country_verified: string | null;
@@ -195,6 +269,7 @@ export interface LeadFilters {
   statuses: string[];
   relationships: string[];
   source: string | null;
+  markets: string[];
   minScore: number | null;
   /** Only leads that have a usable address — the default for campaigns. */
   hasEmail: boolean;
@@ -212,6 +287,7 @@ export const DEFAULT_LEAD_FILTERS: LeadFilters = {
   statuses: [],
   relationships: [],
   source: null,
+  markets: [],
   minScore: null,
   hasEmail: false,
   contactable: false,
@@ -240,6 +316,7 @@ export function parseLeadFilters(params: URLSearchParams): LeadFilters {
     statuses: csv(params.get("statuses"), LEAD_STATUSES),
     relationships: csv(params.get("relationships"), LEAD_RELATIONSHIPS),
     source: params.get("source")?.trim().slice(0, 60) || null,
+    markets: csv(params.get("markets"), LEAD_MARKETS),
     minScore: Number.isFinite(rawScore) ? Math.max(0, Math.min(100, rawScore)) : null,
     hasEmail: params.get("hasEmail") === "1",
     contactable: params.get("contactable") === "1",
@@ -260,6 +337,7 @@ export function serializeLeadFilters(filters: LeadFilters): URLSearchParams {
   if (filters.relationships.length)
     params.set("relationships", filters.relationships.join(","));
   if (filters.source) params.set("source", filters.source);
+  if (filters.markets.length) params.set("markets", filters.markets.join(","));
   if (filters.minScore !== null) params.set("minScore", String(filters.minScore));
   if (filters.hasEmail) params.set("hasEmail", "1");
   if (filters.contactable) params.set("contactable", "1");
@@ -326,6 +404,7 @@ export function applyLeadFilters<Q>(query: Q, filters: LeadFilters): Q {
   if (filters.statuses.length) q = q.in("status", filters.statuses);
   if (filters.relationships.length) q = q.in("relationship", filters.relationships);
   if (filters.source) q = q.eq("source", filters.source);
+  if (filters.markets.length) q = q.in("market", filters.markets);
   if (filters.minScore !== null) q = q.gte("icp_score", filters.minScore);
 
   if (filters.hasEmail) {

@@ -21,7 +21,10 @@ import { COMPANY } from "@/lib/constants";
  */
 export const maxDuration = 30;
 
-const MailTestSchema = z.object({ send: z.boolean().default(false) });
+const MailTestSchema = z.object({
+  send: z.boolean().default(false),
+  identity: z.enum(["domestic", "export"]).default("domestic"),
+});
 
 export async function POST(req: Request) {
   const auth = await requireAdminUser();
@@ -31,25 +34,28 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    // An empty body means "just verify" — not worth a 400.
+    // An empty body means "just verify the domestic mailbox" — not worth a 400.
   }
 
   const parsed = MailTestSchema.safeParse(body);
   const send = parsed.success ? parsed.data.send : false;
+  const identity = parsed.success ? parsed.data.identity : "domestic";
 
-  const config = getMailerConfig();
+  const config = getMailerConfig(identity);
   if (!config) {
     return NextResponse.json({
       data: {
         ok: false,
         error:
-          "SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_FROM_EMAIL.",
+          identity === "export"
+            ? "Export SMTP is not configured. Set SMTP_EXPORT_USER and SMTP_EXPORT_PASS."
+            : "SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_FROM_EMAIL.",
       },
     });
   }
 
   try {
-    const verified = await verifyTransport();
+    const verified = await verifyTransport(identity);
     if (!verified.ok) {
       return NextResponse.json({
         data: { ok: false, error: verified.error, help: smtpErrorHelp(verified.error) },
@@ -69,7 +75,7 @@ export async function POST(req: Request) {
 
     await sendMail({
       to,
-      subject: `SMTP test — ${COMPANY.name} admin`,
+      subject: `SMTP test (${identity}) — ${COMPANY.name} admin`,
       html: `<p>Your mail settings work.</p>
              <p>Sent over <strong>${config.host}:${config.port}</strong> as
              ${config.fromName} &lt;${config.fromEmail}&gt;.</p>
@@ -79,6 +85,7 @@ export async function POST(req: Request) {
         `Your mail settings work.\n\n` +
         `Sent over ${config.host}:${config.port} as ${config.fromName} <${config.fromEmail}>.\n\n` +
         `If this landed in spam, the sending domain still needs SPF, DKIM and DMARC records.`,
+      identity,
     });
 
     return NextResponse.json({ data: { ok: true, sentTo: to } });
@@ -88,6 +95,6 @@ export async function POST(req: Request) {
       data: { ok: false, error: message, help: smtpErrorHelp(message) },
     });
   } finally {
-    closeTransport();
+    closeTransport(identity);
   }
 }

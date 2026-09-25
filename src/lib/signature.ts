@@ -19,6 +19,8 @@ export interface SignatureOptions {
   senderName?: string;
   /** Adds the "Try our…" product plug. Off for replies and receipts. */
   includePromo?: boolean;
+  /** The address shown as the primary contact line — the mailbox this message was actually sent from, so a reply lands where it was sent from. */
+  contactEmail?: string;
 }
 
 function esc(value: string): string {
@@ -40,6 +42,7 @@ export interface RenderedSignature {
 export function renderSignature(options: SignatureOptions = {}): RenderedSignature {
   const signer = options.senderName?.trim() || COMPANY.signerName;
   const promo = options.includePromo ?? true;
+  const contactEmail = options.contactEmail?.trim() || COMPANY.email;
   const site = COMPANY.website.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
   // ── HTML ──────────────────────────────────────────────────
@@ -60,7 +63,7 @@ export function renderSignature(options: SignatureOptions = {}): RenderedSignatu
   <tr><td style="font-size:14px;font-weight:600;color:#1f2a21;">${esc(COMPANY.legalName)}</td></tr>
   <tr><td style="font-size:13px;color:#46543f;padding-top:4px;">
     <a href="tel:${esc(COMPANY.phone.replace(/[^+\d]/g, ""))}" style="color:#46543f;text-decoration:none;">${esc(COMPANY.phone)}</a><br/>
-    <a href="mailto:${esc(COMPANY.email)}" style="${LINK}">${esc(COMPANY.email)}</a><br/>
+    <a href="mailto:${esc(contactEmail)}" style="${LINK}">${esc(contactEmail)}</a><br/>
     <a href="${COMPANY.website}" style="${LINK}">${esc(site)}</a>
   </td></tr>
   ${promoHtml}
@@ -82,7 +85,7 @@ export function renderSignature(options: SignatureOptions = {}): RenderedSignatu
     signer,
     COMPANY.legalName,
     COMPANY.phone,
-    COMPANY.email,
+    contactEmail,
     COMPANY.website,
     ...(promo
       ? ["", COMPANY.featuredProduct.pitch, `Buy at ${COMPANY.featuredProduct.url}`]

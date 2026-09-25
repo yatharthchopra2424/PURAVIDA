@@ -27,25 +27,29 @@ import type { EmailAuthReport } from "@/lib/email-auth";
  * inferring them from symptoms.
  */
 
+interface MailIdentityStatus {
+  configured: boolean;
+  host: string | null;
+  port: number | null;
+  secure: boolean;
+  fromEmail: string | null;
+  fromName: string | null;
+  replyTo: string | null;
+  contactInbox: string;
+  /** Set when the From: domain differs from the site's own domain. */
+  domainMismatch: string | null;
+  /** Live SPF/DKIM/DMARC lookup for the sending domain. */
+  auth: EmailAuthReport | null;
+}
+
 export interface SystemStatus {
   adminEmail: string;
   adminAllowlist: string[];
   siteUrl: string;
-  mail: {
-    configured: boolean;
-    host: string | null;
-    port: number | null;
-    secure: boolean;
-    fromEmail: string | null;
-    fromName: string | null;
-    replyTo: string | null;
-    contactInbox: string;
-    /** Set when the From: domain differs from the site's own domain. */
-    domainMismatch: string | null;
-    /** Live SPF/DKIM/DMARC lookup for the sending domain. */
-    auth: EmailAuthReport | null;
-  };
-  ai: { configured: boolean; model: string };
+  mail: MailIdentityStatus;
+  /** The exports@ mailbox — a second, independent SMTP identity for international leads. */
+  exportMail: MailIdentityStatus;
+  ai: { configured: boolean; model: string; keyCount: number };
   dispatcher: { secretSet: boolean };
   leads: {
     ready: boolean;
@@ -87,6 +91,7 @@ function StatusRow({
 }
 
 export default function SystemStatusPanel({ status }: { status: SystemStatus }) {
+  const [identity, setIdentity] = useState<"domestic" | "export">("domestic");
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<{
     ok: boolean;
@@ -101,7 +106,7 @@ export default function SystemStatusPanel({ status }: { status: SystemStatus }) 
       const res = await fetch("/api/admin/mail-test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ send }),
+        body: JSON.stringify({ send, identity }),
       });
       const json = await res.json();
       setResult({
@@ -120,7 +125,8 @@ export default function SystemStatusPanel({ status }: { status: SystemStatus }) 
     }
   }
 
-  const { mail, ai, dispatcher, leads } = status;
+  const { ai, dispatcher, leads } = status;
+  const mail = identity === "export" ? status.exportMail : status.mail;
 
   return (
     <div className="space-y-4">
@@ -130,12 +136,30 @@ export default function SystemStatusPanel({ status }: { status: SystemStatus }) 
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15">
             <Mail className="h-4 w-4 text-emerald-400" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold text-white">Email</h2>
             <p className="text-xs text-zinc-500">
-              Direct SMTP from the company mailbox — quote confirmations and
-              campaigns both use it
+              Two mailboxes: rk@ for domestic (India) leads, exports@ for
+              international ones — campaigns pick one per send
             </p>
+          </div>
+          <div className="flex overflow-hidden rounded-lg border border-zinc-700 text-xs font-medium">
+            {(["domestic", "export"] as const).map((id) => (
+              <button
+                key={id}
+                onClick={() => {
+                  setIdentity(id);
+                  setResult(null);
+                }}
+                className={`px-2.5 py-1.5 transition-colors ${
+                  identity === id
+                    ? "bg-emerald-500 text-white"
+                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                }`}
+              >
+                {id === "domestic" ? "Domestic" : "Export"}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -151,7 +175,9 @@ export default function SystemStatusPanel({ status }: { status: SystemStatus }) 
             hint={
               mail.configured
                 ? undefined
-                : "Set SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_FROM_EMAIL. Nothing sends until then."
+                : identity === "export"
+                  ? "Set SMTP_EXPORT_USER and SMTP_EXPORT_PASS. Nothing sends from exports@ until then."
+                  : "Set SMTP_HOST, SMTP_USER, SMTP_PASS and MAIL_FROM_EMAIL. Nothing sends until then."
             }
           />
           <StatusRow
@@ -330,7 +356,11 @@ export default function SystemStatusPanel({ status }: { status: SystemStatus }) 
         <StatusRow
           tone={ai.configured ? "ok" : "warn"}
           label="AI enrichment"
-          value={ai.configured ? ai.model : "no API key"}
+          value={
+            ai.configured
+              ? `${ai.model} · ${ai.keyCount} key${ai.keyCount === 1 ? "" : "s"} (${ai.keyCount}× throughput)`
+              : "no API key"
+          }
           hint={
             ai.configured
               ? undefined

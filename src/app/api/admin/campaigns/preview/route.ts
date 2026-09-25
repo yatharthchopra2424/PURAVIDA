@@ -27,6 +27,8 @@ const PreviewSchema = z.object({
   /** Mirrors the composer's signature toggle. */
   includeSignature: z.boolean().optional(),
   trackOpens: z.boolean().optional(),
+  /** Which mailbox this would send from — changes the signature's contact line and, for a test send, which mailbox actually sends it. */
+  identity: z.enum(["domestic", "export"]).default("domestic"),
 });
 
 export async function POST(req: Request) {
@@ -84,8 +86,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const senderName =
-    input.senderName?.trim() || getMailerConfig()?.fromName || "PuraVida Natural";
+  const mailer = getMailerConfig(input.identity);
+  const senderName = input.senderName?.trim() || mailer?.fromName || "PuraVida Natural";
 
   const rendered = renderCampaignEmail({
     subject: input.subject,
@@ -99,6 +101,7 @@ export async function POST(req: Request) {
     preview: true,
     includeSignature: input.includeSignature,
     tracking: input.trackOpens,
+    fromEmail: mailer?.fromEmail,
   });
 
   // Unknown {{tokens}} reach the recipient verbatim, so surfacing them
@@ -111,8 +114,12 @@ export async function POST(req: Request) {
   let testSend: { ok: boolean; error?: string } | null = null;
 
   if (input.sendTestTo) {
-    if (!isMailerConfigured()) {
-      testSend = { ok: false, error: "SMTP is not configured." };
+    if (!isMailerConfigured(input.identity)) {
+      testSend = {
+        ok: false,
+        error:
+          input.identity === "export" ? "Export SMTP is not configured." : "SMTP is not configured.",
+      };
     } else {
       try {
         await sendCampaignMail({
@@ -120,6 +127,7 @@ export async function POST(req: Request) {
           subject: `[TEST] ${rendered.subject}`,
           html: rendered.html,
           text: rendered.text,
+          identity: input.identity,
         });
         testSend = { ok: true };
       } catch (err) {
