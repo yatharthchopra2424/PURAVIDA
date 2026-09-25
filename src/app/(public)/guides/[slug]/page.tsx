@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const g = guideBySlug((await params).slug);
   if (!g) return { title: "Guide not found", robots: { index: false } };
   return {
-    title: g.metaTitle,
+    title: { absolute: g.metaTitle },
     description: g.answer.slice(0, 158),
     alternates: { canonical: `/guides/${g.slug}` },
     openGraph: { type: "article", title: g.title, description: g.answer, url: `/guides/${g.slug}`, publishedTime: g.published },

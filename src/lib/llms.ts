@@ -13,7 +13,7 @@ import { GUIDES } from "@/data/guides";
 
 const facts = () => [
   `- Legal name: ${COMPANY.legalName} (${COMPANY.constitution})`,
-  `- Address: Plot No. 169, 170, 171, Khushi Ram Park, Uttam Nagar West, New Delhi 110059, India`,
+  `- Address: ${COMPANY.address}`,
   `- GSTIN: ${COMPANY.gst}`,
   `- FSSAI licence: ${COMPANY.fssaiLicense} (State licence, Delhi)`,
   `- Udyam (MSME) registration: ${COMPANY.udyam}`,

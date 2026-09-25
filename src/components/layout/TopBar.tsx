@@ -29,7 +29,7 @@ export function TopBar() {
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
             <MapPin className="h-3 w-3" />
-            {COMPANY.address}
+            {COMPANY.addressShort}
           </span>
           <span className="hidden text-emerald-300 sm:inline">|</span>
           <span className="hidden sm:inline">GST No.- {COMPANY.gst}</span>

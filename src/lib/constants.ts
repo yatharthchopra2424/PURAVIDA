@@ -57,7 +57,13 @@ export const COMPANY = {
   // Kept as a distinct field so a real sales@ alias can be split out
   // later without touching every call site; same mailbox for now.
   salesEmail: "rk@puravidanaturalindia.com",
-  address: "169, Uttam Nagar West, New Delhi - 110059, India",
+  // Canonical address, matching the GST registration. Use this exact text on every
+  // directory listing (Google Business Profile, IndiaMART, TradeIndia).
+  address:
+    "Plot No. 169, 170, 171, UGF Floor, Front Side Middle RHS, Khushi Ram Park, Uttam Nagar West, New Delhi, Delhi 110059, India",
+  /** Shorter form for tight spaces such as the phone top bar; a strict subset of `address`. */
+  addressShort: "Khushi Ram Park, Uttam Nagar West, New Delhi 110059",
+  street: "Plot No. 169, 170, 171, UGF Floor, Front Side Middle RHS, Khushi Ram Park, Uttam Nagar West",
 
   // ── Email signature ────────────────────────────────────────
   // Transcribed from the signature already used in Outlook, so mail the

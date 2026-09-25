@@ -192,7 +192,7 @@ const REGISTRATIONS = [
   { icon: ShieldCheck, label: "FSSAI licence", value: COMPANY.fssaiLicense, note: "Verify on FoSCoS", href: "https://foscos.fssai.gov.in/" },
   { icon: BadgeCheck, label: "Halal certification", value: "HIW28020819", note: "Halal India, product list on request", href: null },
   { icon: FileCheck2, label: "Udyam (MSME)", value: COMPANY.udyam, note: "Verify on Udyam portal", href: "https://udyamregistration.gov.in/" },
-  { icon: MapPin, label: "Registered office", value: "Uttam Nagar West, New Delhi 110059", note: "Plot 169–171, Khushi Ram Park", href: null },
+  { icon: MapPin, label: "Registered office", value: COMPANY.address, note: "As on our GST registration", href: null },
 ];
 
 const PROMISES = [

@@ -12,7 +12,7 @@ export type QuoteUnit = "kg" | "g" | "L" | "ml" | "MT" | "units";
  * instead of the whole product (descriptions, application lists…).
  */
 export interface QuoteLine {
-  product: Pick<Product, "id" | "name" | "slug" | "category" | "categorySlug" | "image" | "botanicalName">;
+  product: Pick<Product, "id" | "name" | "slug" | "category" | "categorySlug" | "image" | "botanicalName" | "activeIngredient" | "concentration">;
   quantity: number | null;
   unit: QuoteUnit;
   grade: string;
@@ -42,6 +42,8 @@ const slim = (p: Product): QuoteLine["product"] => ({
   categorySlug: p.categorySlug,
   image: p.image,
   botanicalName: p.botanicalName,
+  activeIngredient: p.activeIngredient,
+  concentration: p.concentration,
 });
 
 export const useCartStore = create<CartState>()(

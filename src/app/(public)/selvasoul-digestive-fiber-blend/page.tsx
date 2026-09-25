@@ -24,7 +24,7 @@ const PATH = "/selvasoul-digestive-fiber-blend";
 const NAME = "Selvasoul Digestive Fiber Blend: Isabgol & Saunf, 200 g";
 
 export const metadata: Metadata = {
-  title: "Selvasoul Digestive Fiber Blend: Isabgol & Saunf, 200 g",
+  title: { absolute: "Selvasoul Digestive Fiber Blend (Isabgol & Saunf)" },
   description:
     "Selvasoul Digestive Fiber Blend: 80% isabgol husk and 20% saunf. 4.1 g dietary fibre per 5 g serving, no additives or preservatives. Buy on Amazon India.",
   alternates: { canonical: PATH },

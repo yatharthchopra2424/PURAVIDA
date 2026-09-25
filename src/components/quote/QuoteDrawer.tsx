@@ -6,10 +6,10 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X, Trash2, ArrowRight, PackageSearch, ShoppingBag } from "lucide-react";
-import { useCartStore, type QuoteUnit } from "@/stores/useCartStore";
+import { useCartStore } from "@/stores/useCartStore";
+import { QuoteLineFields } from "@/components/quote/QuoteLineFields";
 import { track } from "@/lib/track";
 
-const UNITS: QuoteUnit[] = ["kg", "g", "L", "ml", "MT", "units"];
 
 /**
  * Slide-over quote cart. Opens whenever a product is added (see
@@ -130,42 +130,7 @@ export function QuoteDrawer() {
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="mt-3 grid grid-cols-[1fr_88px] gap-2">
-                      <label className="sr-only" htmlFor={`qty-${line.product.id}`}>
-                        Quantity
-                      </label>
-                      <input
-                        id={`qty-${line.product.id}`}
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        placeholder="Quantity (optional)"
-                        value={line.quantity ?? ""}
-                        onChange={(e) =>
-                          updateLine(line.product.id, {
-                            quantity: e.target.value === "" ? null : Math.max(0, Number(e.target.value)),
-                          })
-                        }
-                        className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-emerald focus:outline-none focus:ring-2 focus:ring-emerald/20"
-                      />
-                      <select
-                        aria-label="Unit"
-                        value={line.unit}
-                        onChange={(e) => updateLine(line.product.id, { unit: e.target.value as QuoteUnit })}
-                        className="h-10 rounded-lg border border-gray-200 bg-white px-2 text-sm focus:border-emerald focus:outline-none focus:ring-2 focus:ring-emerald/20"
-                      >
-                        {UNITS.map((u) => (
-                          <option key={u}>{u}</option>
-                        ))}
-                      </select>
-                      <input
-                        aria-label="Grade or specification"
-                        placeholder="Grade / spec, e.g. 5% withanolides (optional)"
-                        value={line.grade}
-                        onChange={(e) => updateLine(line.product.id, { grade: e.target.value.slice(0, 120) })}
-                        className="col-span-2 h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-emerald focus:outline-none focus:ring-2 focus:ring-emerald/20"
-                      />
-                    </div>
+                    <QuoteLineFields line={line} compact />
                   </motion.div>
                 ))}
               </AnimatePresence>

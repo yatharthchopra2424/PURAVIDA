@@ -49,8 +49,9 @@ export function organizationSchema() {
     telephone: COMPANY.phone,
     address: {
       "@type": "PostalAddress",
-      streetAddress: "169, Uttam Nagar West",
+      streetAddress: COMPANY.street,
       addressLocality: "New Delhi",
+      addressRegion: "Delhi",
       postalCode: "110059",
       addressCountry: "IN",
     },

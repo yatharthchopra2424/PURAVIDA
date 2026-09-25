@@ -19,7 +19,8 @@ import {
   Phone,
 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
-import { useCartStore, type QuoteUnit } from "@/stores/useCartStore";
+import { useCartStore } from "@/stores/useCartStore";
+import { QuoteLineFields } from "@/components/quote/QuoteLineFields";
 import { COMPANY } from "@/lib/constants";
 import { COUNTRY_NAMES, TOP_COUNTRIES } from "@/lib/countries";
 import { attribution, track } from "@/lib/track";
@@ -27,7 +28,6 @@ import type { Product } from "@/types";
 
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
-const UNITS: QuoteUnit[] = ["kg", "g", "L", "ml", "MT", "units"];
 const BUYER_TYPES = ["Manufacturer / Formulator", "Brand owner", "Trader / Distributor", "Researcher / Lab", "Other"] as const;
 
 const fieldClass =
@@ -379,35 +379,7 @@ export default function ContactPage() {
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
-                        <div className="mt-3 grid grid-cols-[1fr_96px] gap-2 sm:grid-cols-[140px_96px_1fr]">
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            min={0}
-                            aria-label={`Quantity for ${line.product.name}`}
-                            placeholder="Quantity"
-                            value={line.quantity ?? ""}
-                            onChange={(e) => updateLine(line.product.id, { quantity: e.target.value === "" ? null : Math.max(0, Number(e.target.value)) })}
-                            className="h-11 rounded-lg border border-gray-200 px-3 text-sm focus:border-emerald focus:outline-none focus:ring-2 focus:ring-emerald/20"
-                          />
-                          <select
-                            aria-label={`Unit for ${line.product.name}`}
-                            value={line.unit}
-                            onChange={(e) => updateLine(line.product.id, { unit: e.target.value as QuoteUnit })}
-                            className="h-11 rounded-lg border border-gray-200 bg-white px-2 text-sm focus:border-emerald focus:outline-none focus:ring-2 focus:ring-emerald/20"
-                          >
-                            {UNITS.map((u) => (
-                              <option key={u}>{u}</option>
-                            ))}
-                          </select>
-                          <input
-                            aria-label={`Grade or specification for ${line.product.name}`}
-                            placeholder="Grade / spec (optional)"
-                            value={line.grade}
-                            onChange={(e) => updateLine(line.product.id, { grade: e.target.value.slice(0, 120) })}
-                            className="col-span-2 h-11 rounded-lg border border-gray-200 px-3 text-sm focus:border-emerald focus:outline-none focus:ring-2 focus:ring-emerald/20 sm:col-span-1"
-                          />
-                        </div>
+                        <QuoteLineFields line={line} />
                       </motion.li>
                     ))}
                   </AnimatePresence>

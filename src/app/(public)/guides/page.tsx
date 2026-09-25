@@ -4,7 +4,7 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import { GUIDES } from "@/data/guides";
 
 export const metadata: Metadata = {
-  title: "Buyer Guides: Herbal Extracts & Oleoresins",
+  title: { absolute: "Buyer Guides: Herbal Extracts & Oleoresins" },
   description:
     "Plain-language guides for buyers of herbal extracts, essential oils and oleoresins: reading a COA, extract grades, and the documents needed to import from India.",
   alternates: { canonical: "/guides" },

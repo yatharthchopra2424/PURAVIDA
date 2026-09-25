@@ -1153,5 +1153,86 @@
     "sourceUrl": "https://commons.wikimedia.org/wiki/File:Spirulina-powder-shadow.jpg",
     "license": "CC BY-SA 3.0",
     "artist": ""
+  },
+  "bovine-colostrum": {
+    "productName": "Bovine Colostrum",
+    "commonsTitle": "File:Bovine colostrum and spray-dried colostrum powder.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/w/index.php?curid=69601406",
+    "license": "CC BY-SA 4.0",
+    "artist": "Marguerita Briana Cattell",
+    "source": "commons"
+  },
+  "coenzyme-q10-ubiquinone": {
+    "productName": "Coenzyme Q10 (Ubiquinone)",
+    "commonsTitle": "File:Coenzyme Q10 powder.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/w/index.php?curid=182582684",
+    "license": "CC BY-SA 4.0",
+    "artist": "Awkwafaba",
+    "source": "commons"
+  },
+  "creatine-monohydrate": {
+    "productName": "Creatine Monohydrate",
+    "commonsTitle": "File:Creatine monohydrate powder.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/w/index.php?curid=182393810",
+    "license": "CC BY-SA 4.0",
+    "artist": "Awkwafaba",
+    "source": "commons"
+  },
+  "glutathione-reduced": {
+    "productName": "Glutathione Reduced",
+    "commonsTitle": "File:Sample of glutathione.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/w/index.php?curid=113683339",
+    "license": "CC0",
+    "artist": "Leiem",
+    "source": "commons"
+  },
+  "l-arginine-hcl-akg": {
+    "productName": "L-Arginine HCL / AKG",
+    "representativeOf": "l-arginine"
+  },
+  "l-arginine-l-aspartate": {
+    "productName": "L-Arginine L-Aspartate",
+    "representativeOf": "l-arginine"
+  },
+  "l-glutamic-acid": {
+    "productName": "L-Glutamic Acid",
+    "commonsTitle": "File:Sample of L-Glutamic acid.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/w/index.php?curid=38945003",
+    "license": "CC BY-SA 3.0",
+    "artist": "LHcheM",
+    "source": "commons"
+  },
+  "l-glutamine": {
+    "productName": "L-Glutamine",
+    "commonsTitle": "File:Sample of L-Glutamine.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/w/index.php?curid=38945007",
+    "license": "CC BY-SA 3.0",
+    "artist": "LHcheM",
+    "source": "openverse"
+  },
+  "l-glutathione-reduced": {
+    "productName": "L-Glutathione Reduced",
+    "commonsTitle": "File:Sample of glutathione.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/w/index.php?curid=113683339",
+    "license": "CC0",
+    "artist": "Leiem",
+    "source": "commons",
+    "representativeOf": "glutathione-reduced"
+  },
+  "l-serine": {
+    "productName": "L-Serine",
+    "commonsTitle": "File:L-serine sample.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/w/index.php?curid=56701879",
+    "license": "CC BY-SA 4.0",
+    "artist": "Leiem",
+    "source": "commons"
+  },
+  "whey-protein-80-90": {
+    "productName": "Whey Protein (80% / 90%)",
+    "commonsTitle": "File:Whey Protein Scoop (49935767168).jpg",
+    "sourceUrl": "https://commons.wikimedia.org/w/index.php?curid=90648152",
+    "license": "CC BY 2.0",
+    "artist": "Ajay Suresh from New York, NY, USA",
+    "source": "commons"
   }
 }

@@ -54,3 +54,6 @@ next-env.d.ts
 
 # Legal documents contain personal data (Aadhaar etc.) - never commit or serve
 /private-docs/
+
+# Product image agent output (downloaded photos + review sheet)
+/scratch-product-images/

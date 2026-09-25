@@ -17,17 +17,19 @@ Google, Bing, IndiaMART and TradeIndia all compare these three facts across the 
 | Website | www.puravidanaturalindia.com | Product List PDF footer says **www.puravida.org.in**, and that old domain still loads (200) | See below |
 | Address | "169, Uttam Nagar West, New Delhi - 110059" (short) | GST: "Plot No 169,170,171, UGF Floor Front Side Middle RHS, Khushi Ram Park, Uttam Nagar West, New Delhi, Delhi 110059" | Use the long GST form on every listing |
 
-**Recommended canonical set (copy exactly, everywhere):**
+**✅ DECIDED (25 Sep 2026): use exactly this everywhere. The website, structured data and llms.txt already use it.**
 
 ```
-Business name:   Pura Vida Natural LLP   (brand shown as "PuraVida Natural")
+Business name:   PuraVida Natural
 Address:         Plot No. 169, 170, 171, UGF Floor, Front Side Middle RHS,
                  Khushi Ram Park, Uttam Nagar West, New Delhi, Delhi 110059, India
-Phone:           +91 98116 47596        (change if you prefer the 97112 number)
+Phone:           +91 98116 47596
 Email:           rk@puravidanaturalindia.com
 Website:         https://www.puravidanaturalindia.com/
 Hours:           Monday to Saturday, 9:00 AM to 6:00 PM IST
 ```
+
+Where "Business name" is asked for the **legal** entity (GST, IndiaMART registration form), enter `Pura Vida Natural LLP`; for every public display name use `PuraVida Natural`.
 
 Two follow-ups (tell me and I'll do the code parts):
 1. **The old domain puravida.org.in.** If you own it, ask your domain host to set a permanent (301) redirect from it to `https://www.puravidanaturalindia.com/`, so old links and the printed PDF pass their value to the new site.

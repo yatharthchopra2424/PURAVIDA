@@ -17,6 +17,10 @@ type AttributionEntry = {
   sourceUrl: string;
   license: string;
   artist: string;
+  /** Where the photo came from (commons, openverse, pexels, pixabay); set by the image agent. */
+  source?: string;
+  /** Set when this product uses a related product's photo as a representative image. */
+  representativeOf?: string;
 };
 
 function loadAttributions(): Record<string, AttributionEntry> {
@@ -84,6 +88,11 @@ export default function ImageCreditsPage() {
                   <tr key={slug}>
                     <td className="px-4 py-3 font-medium text-gray-900">
                       {entry.productName}
+                      {entry.representativeOf && (
+                        <span className="mt-0.5 block text-xs font-normal text-gray-500">
+                          Representative image (shared with {entry.representativeOf.replace(/-/g, " ")})
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <a

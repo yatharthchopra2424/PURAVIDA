@@ -12,7 +12,7 @@ export const revalidate = 3600;
 const PATH = "/encapsulated-oleoresins";
 
 export const metadata: Metadata = {
-  title: "Encapsulated Oleoresins: Supplier in India",
+  title: { absolute: "Encapsulated Oleoresins: Supplier in India" },
   description:
     "Free-flowing encapsulated oleoresins from New Delhi: hing, black pepper, capsicum, ginger, turmeric and more, for masala, seasoning and tea blends. Bulk and export.",
   alternates: { canonical: PATH },

@@ -375,8 +375,7 @@ export default function AboutPage() {
       <section className="relative isolate overflow-hidden py-20 lg:py-24">
         <Image
           src="/images/middile4.webp"
-          alt=""
-          aria-hidden="true"
+          alt="Herbs and botanical raw materials used in PuraVida Natural extracts"
           fill
           sizes="100vw"
           quality={80}
