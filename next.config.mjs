@@ -118,6 +118,15 @@ const nextConfig = {
       // serves that immutably, and overriding it triggers a build
       // warning ("can break Next.js development behavior") in v16.
       {
+        // Only the real domain may be indexed. Vercel's own preview/deployment addresses
+        // (*.vercel.app) serve the same pages, and Search Console has already crawled one:
+        // duplicate content that competes with the real site. Every non-production host
+        // is told not to index.
+        source: "/:path*",
+        has: [{ type: "host", value: "(?!(www\\.)?puravidanaturalindia\\.com)(?<host>.+)" }],
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+      {
         // The admin panel must never be cached by a CDN or a shared
         // proxy: responses are user-specific.
         source: "/x-admin/:path*",

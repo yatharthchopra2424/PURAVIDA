@@ -1,40 +1,86 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/shared/SectionHeading";
+import { SpotlightCard } from "@/components/motion/SpotlightCard";
+import { ProductThumb, hasRealImage } from "@/components/products/ProductThumb";
 import { useCartStore } from "@/stores/useCartStore";
 import { cn } from "@/lib/utils";
 import { Category, Product } from "@/types";
-import { PRODUCT_FALLBACK_IMAGE } from "@/lib/constants";
 
-export function ProductCarousel({
-  categories,
-  products,
-}: {
-  categories: Category[];
-  products: Product[];
-}) {
+/** How many products each tab features. The full list is one click away. */
+const FEATURED = 12;
+
+/**
+ * Home-page product carousel.
+ *
+ * - Products WITH a photo are listed first, so a first-time visitor sees
+ *   pictures, not placeholders (the old version listed A to Z, and the
+ *   first four nutraceuticals had no photo).
+ * - Native scroll-snap, so touch swipe, trackpad and keyboard just work,
+ *   plus previous/next buttons and a progress bar.
+ * - Nutraceuticals opens first: the most-visited category in the
+ *   Aug to Sep 2026 analytics.
+ */
+export function ProductCarousel({ categories, products }: { categories: Category[]; products: Product[] }) {
   const [activeCategory, setActiveCategory] = useState(
     categories.find((c) => c.slug === "nutraceuticals")?.slug ?? categories[0]?.slug ?? ""
   );
   const scrollRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((s) => s.addItem);
+  const reduce = useReducedMotion();
+  const [progress, setProgress] = useState(0);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(true);
 
-  if (categories.length === 0) {
-    return null;
-  }
-
-  const filteredProducts = products.filter(
-    (p) => p.categorySlug === activeCategory
+  const inCategory = useMemo(() => products.filter((p) => p.categorySlug === activeCategory), [products, activeCategory]);
+  const featured = useMemo(
+    () =>
+      [...inCategory]
+        .sort((a, b) => Number(hasRealImage(b)) - Number(hasRealImage(a)) || b.popularity - a.popularity || a.name.localeCompare(b.name))
+        .slice(0, FEATURED),
+    [inCategory]
   );
+  const activeName = categories.find((c) => c.slug === activeCategory)?.name ?? "";
+
+  const update = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setProgress(max > 0 ? el.scrollLeft / max : 0);
+    setCanPrev(el.scrollLeft > 4);
+    setCanNext(el.scrollLeft < max - 4);
+  }, []);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ left: 0 });
+    update();
+  }, [activeCategory, update]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [update]);
+
+  const scrollByCards = (dir: 1 | -1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>("[data-card]");
+    const step = (card?.offsetWidth ?? 280) + 20;
+    el.scrollBy({ left: dir * step * (window.innerWidth >= 1024 ? 3 : 1), behavior: reduce ? "auto" : "smooth" });
+  };
+
+  if (categories.length === 0) return null;
 
   return (
-    <section className="py-20 lg:py-28">
+    <section className="py-20 lg:py-28" aria-label="Featured products">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <SectionHeading
           subtitle="Our Product Range"
@@ -42,137 +88,139 @@ export function ProductCarousel({
           description="Browse our comprehensive range of premium natural ingredients, each backed by rigorous quality testing and standardization."
         />
 
-        {/* Category Toggle */}
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-2">
-          {categories.map((cat) => (
-            <button
-              key={cat.slug}
-              onClick={() => {
-                setActiveCategory(cat.slug);
-                scrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
-              }}
-              className={cn(
-                "rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
-                activeCategory === cat.slug
-                  ? "bg-emerald text-white shadow-lg shadow-emerald/25"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              )}
-            >
-              {cat.name}
-            </button>
-          ))}
+        {/* Category tabs: the active pill slides between them. */}
+        <div role="tablist" aria-label="Product categories" className="no-scrollbar mt-12 flex items-center justify-start gap-1 overflow-x-auto rounded-full bg-gray-100/80 p-1 sm:mx-auto sm:w-fit sm:justify-center">
+          {categories.map((cat) => {
+            const active = activeCategory === cat.slug;
+            return (
+              <button
+                key={cat.slug}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setActiveCategory(cat.slug)}
+                className={cn(
+                  "relative min-h-11 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-colors sm:px-5",
+                  active ? "text-white" : "text-gray-600 hover:text-gray-900"
+                )}
+              >
+                {active && (
+                  <motion.span
+                    layoutId="range-tab-pill"
+                    className="absolute inset-0 rounded-full bg-emerald shadow-lg shadow-emerald/25"
+                    transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }}
+                  />
+                )}
+                <span className="relative z-10">{cat.name}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Product Carousel */}
-        <div
-          ref={scrollRef}
-          className="mt-10 flex gap-6 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {filteredProducts.map((product) => (
-            <ProductQuickCard
-              key={product.id}
-              product={product}
-              onAddToQuote={() => addItem(product)}
-            />
-          ))}
+        {/* Carousel */}
+        <div className="relative mt-10">
+          <div
+            ref={scrollRef}
+            onScroll={update}
+            role="region"
+            aria-roledescription="carousel"
+            aria-label={`${activeName} products`}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowRight") scrollByCards(1);
+              if (e.key === "ArrowLeft") scrollByCards(-1);
+            }}
+            className="no-scrollbar flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-1 pb-6 pt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald/40 [mask-image:linear-gradient(90deg,transparent,#000_2%,#000_96%,transparent)]"
+          >
+            {featured.map((product, i) => (
+              <QuickCard key={product.id} product={product} eager={i < 4} onAddToQuote={() => addItem(product)} />
+            ))}
+            <Link
+              href={`/products/${activeCategory}`}
+              data-card
+              className="group flex w-[220px] flex-shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-emerald/30 bg-emerald-50/50 p-6 text-center transition-colors hover:border-emerald hover:bg-emerald-50 sm:w-[260px]"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald text-white transition-transform group-hover:translate-x-1">
+                <ArrowRight className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="font-bold text-emerald-800">See all {inCategory.length} {activeName.toLowerCase()}</span>
+            </Link>
+          </div>
+
+          {/* Controls */}
+          <div className="mt-2 flex items-center gap-4">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200" aria-hidden="true">
+              <div className="h-full rounded-full bg-emerald transition-[width] duration-150" style={{ width: `${Math.max(12, progress * 100)}%` }} />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => scrollByCards(-1)}
+                disabled={!canPrev}
+                aria-label="Previous products"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition-all hover:border-emerald hover:text-emerald disabled:pointer-events-none disabled:opacity-40"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => scrollByCards(1)}
+                disabled={!canNext}
+                aria-label="Next products"
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald text-white shadow-lg shadow-emerald/25 transition-all hover:bg-emerald-600 disabled:pointer-events-none disabled:opacity-40"
+              >
+                <ArrowRight className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function ProductQuickCard({
-  product,
-  onAddToQuote,
-}: {
-  product: Product;
-  onAddToQuote: () => void;
-}) {
-  const hasRealImage = product.image !== PRODUCT_FALLBACK_IMAGE;
+function QuickCard({ product, eager, onAddToQuote }: { product: Product; eager: boolean; onAddToQuote: () => void }) {
+  const href = `/products/${product.categorySlug}/${product.slug}`;
   return (
-    <motion.div
-      layoutId={`product-${product.slug}`}
-      className="flex w-[280px] flex-shrink-0 snap-start flex-col rounded-2xl border border-gray-100 bg-white overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-emerald/20"
+    <SpotlightCard
+      className="group w-[240px] flex-shrink-0 snap-start overflow-hidden rounded-2xl border border-gray-100 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-emerald/30 hover:shadow-xl hover:shadow-emerald/10 sm:w-[280px]"
     >
-      {/* Image */}
-      <div className="relative h-48 flex items-center justify-center overflow-hidden bg-emerald-50">
-        {hasRealImage ? (
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            sizes="280px"
-            className="object-cover"
-          />
-        ) : (
-          <>
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: "url('/images/Product%20Card%20Backgrounds.png')" }}
-            />
-            <div className="absolute inset-0 bg-emerald/10" />
-            <div className="text-center p-4">
-              <span className="text-3xl">🌿</span>
-              <p className="mt-2 text-xs font-medium text-emerald-600">
-                {product.category}
-              </p>
-            </div>
-          </>
-        )}
-        {product.qualityBadges.length > 0 && (
-          <div className="absolute top-3 right-3 flex gap-1">
-            {product.qualityBadges.slice(0, 2).map((badge) => (
-              <span
-                key={badge}
-                className="rounded-md bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-emerald shadow-sm"
-              >
-                {badge}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Content */}
-      <div className="flex flex-1 flex-col p-5">
-        <h4 className="mb-1 text-sm font-bold text-gray-900">{product.name}</h4>
-        {product.activeIngredient && (
-          <p className="mb-2 text-xs text-gray-500">
-            Active: <span className="font-medium text-emerald">{product.activeIngredient}</span>
-            {product.concentration && (
-              <span className="ml-1 text-gray-400">({product.concentration})</span>
+      <div data-card className="flex h-full flex-col">
+        <Link href={href} tabIndex={-1} aria-hidden="true" className="block">
+          <div className="relative h-44 overflow-hidden bg-emerald-50 sm:h-48">
+            <ProductThumb product={product} sizes="280px" priority={eager} />
+            {product.qualityBadges.length > 0 && (
+              <div className="absolute right-3 top-3 flex gap-1">
+                {product.qualityBadges.slice(0, 2).map((badge) => (
+                  <span key={badge} className="rounded-md bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-emerald shadow-sm">
+                    {badge}
+                  </span>
+                ))}
+              </div>
             )}
-          </p>
-        )}
-        <div className="mb-3 flex flex-wrap gap-1">
-          {product.applications.slice(0, 2).map((app) => (
-            <span
-              key={app}
-              className="rounded-md bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500"
-            >
-              {app}
-            </span>
-          ))}
-        </div>
-
-        <div className="mt-auto flex items-center gap-2">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={onAddToQuote}
-            className="flex-1 text-xs"
-          >
-            Get Quote
-          </Button>
-          <Link
-            href={`/products/${product.categorySlug}/${product.slug}`}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-50 hover:text-emerald"
-          >
-            <ArrowRight className="h-4 w-4" />
+          </div>
+        </Link>
+        <div className="flex flex-1 flex-col p-5">
+          <Link href={href} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald">
+            <h3 className="mb-1 line-clamp-2 text-sm font-bold text-gray-900 transition-colors group-hover:text-emerald">{product.name}</h3>
           </Link>
+          {product.activeIngredient && (
+            <p className="mb-3 line-clamp-2 text-xs text-gray-600">
+              <span className="font-medium text-emerald">{product.activeIngredient}</span>
+              {product.concentration && <span className="ml-1 text-gray-500">({product.concentration})</span>}
+            </p>
+          )}
+          <div className="mt-auto flex items-center gap-2 pt-2">
+            <Button variant="primary" size="sm" onClick={onAddToQuote} className="flex-1 text-xs">
+              Get Quote
+            </Button>
+            <Link
+              href={href}
+              aria-label={`View ${product.name}`}
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-all hover:border-emerald hover:bg-emerald-50 hover:text-emerald sm:h-9 sm:w-9"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </div>
-    </motion.div>
+    </SpotlightCard>
   );
 }

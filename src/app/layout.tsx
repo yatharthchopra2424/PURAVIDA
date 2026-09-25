@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     template: "%s | PuraVida Natural",
   },
   description:
-    "Supplier and exporter of standardised herbal extracts, essential oils, oleoresins and nutraceutical ingredients from New Delhi, India. 14+ years of experience, FSSAI licensed.",
+    "Supplier and exporter of standardised herbal extracts, essential oils, oleoresins and nutraceuticals from New Delhi. 14+ years of experience. FSSAI licensed.",
   keywords: [
     "herbal extracts",
     "essential oils",

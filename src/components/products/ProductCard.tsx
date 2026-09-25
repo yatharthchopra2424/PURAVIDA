@@ -2,14 +2,13 @@
 
 import React from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, Droplets, FlaskConical, Leaf, Pill } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Product } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { SpotlightCard } from "@/components/motion/SpotlightCard";
 import { useCartStore } from "@/stores/useCartStore";
-import { PRODUCT_FALLBACK_IMAGE } from "@/lib/constants";
+import { ProductThumb } from "@/components/products/ProductThumb";
 
 interface ProductCardProps {
   product: Product;
@@ -25,23 +24,8 @@ const badgeVariantMap: Record<string, "iso" | "gmp" | "fssai" | "halal" | "fda" 
   Export: "export",
 };
 
-/** Placeholder art for the ~20% of products without a photo: category icon on a tinted gradient. */
-function NoPhoto({ product }: { product: Product }) {
-  const c = product.category.toLowerCase();
-  const Icon = c.includes("essential") ? Droplets : c.includes("oleoresin") ? FlaskConical : c.includes("nutraceutical") ? Pill : Leaf;
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-emerald-50 via-white to-amber-50">
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/80 text-emerald shadow-sm ring-1 ring-emerald-100 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
-        <Icon className="h-7 w-7" aria-hidden="true" />
-      </span>
-      <span className="px-4 text-center text-[11px] font-semibold uppercase tracking-wider text-emerald-700/70">{product.category}</span>
-    </div>
-  );
-}
-
 export function ProductCard({ product, highlight = false }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem);
-  const hasRealImage = product.image !== PRODUCT_FALLBACK_IMAGE;
   const href = `/products/${product.categorySlug}/${product.slug}`;
 
   return (
@@ -55,17 +39,7 @@ export function ProductCard({ product, highlight = false }: ProductCardProps) {
       <div className="flex h-full flex-col">
         <Link href={href} tabIndex={-1} aria-hidden="true" className="block">
           <div className="relative h-36 overflow-hidden bg-emerald-50 sm:h-44">
-            {hasRealImage ? (
-              <Image
-                src={product.image}
-                alt={`${product.name}${product.botanicalName ? ` (${product.botanicalName})` : ""}, ${product.category}`}
-                fill
-                sizes="(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 45vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-110"
-              />
-            ) : (
-              <NoPhoto product={product} />
-            )}
+            <ProductThumb product={product} sizes="(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 45vw" />
 
             <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1">
               {product.qualityBadges.slice(0, 3).map((badge) => (

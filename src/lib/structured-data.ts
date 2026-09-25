@@ -111,7 +111,9 @@ export function productSchema(product: Product) {
     category: product.category,
     url: absoluteUrl(`/products/${product.categorySlug}/${product.slug}`),
     ...(product.botanicalName && { alternateName: product.botanicalName }),
-    ...(product.image?.startsWith("http") && { image: product.image }),
+    // Google requires an image on every Product. Products without a photo fall back to the
+    // site's share image rather than omitting the field.
+    image: product.image?.startsWith("http") ? product.image : absoluteUrl("/opengraph-image"),
     brand: { "@type": "Brand", name: COMPANY.name },
     manufacturer: { "@id": ORGANIZATION_ID },
     additionalProperty: [
@@ -136,20 +138,10 @@ export function productSchema(product: Product) {
         value: "Yes",
       },
     ].filter(Boolean),
-    // B2B: pricing is quote-based, so advertise availability and the
-    // enquiry route rather than a price we cannot state.
-    offers: {
-      "@type": "Offer",
-      availability: "https://schema.org/InStock",
-      priceCurrency: "USD",
-      priceSpecification: {
-        "@type": "PriceSpecification",
-        valueAddedTaxIncluded: false,
-      },
-      seller: { "@id": ORGANIZATION_ID },
-      url: absoluteUrl("/contact"),
-      businessFunction: "http://purl.org/goodrelations/v1#Sell",
-    },
+    // Deliberately NO `offers` block. Products here are quote-only, so there is no price
+    // to publish, and Google Search Console flags an Offer without a price as a critical
+    // error ("Either price or priceSpecification.price should be specified") and blocks
+    // rich results for the page. A Product with no offers is valid and shows no error.
   };
 }
 

@@ -107,12 +107,10 @@ export default function SelvasoulPage() {
         proteinContent: "0 g",
         sodiumContent: "1 mg",
       },
-      offers: {
-        "@type": "Offer",
-        url: AMAZON_URL,
-        availability: "https://schema.org/InStock",
-        seller: { "@type": "Organization", name: "Amazon.in" },
-      },
+      // No `offers`: an Offer needs a price, which changes on Amazon and isn't ours to state
+      // here (Search Console rejected the priceless offer). The Amazon listing is linked as the
+      // page's sameAs instead.
+      sameAs: [AMAZON_URL],
     },
     {
       "@type": "FAQPage",
