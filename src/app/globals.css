@@ -203,15 +203,32 @@ video {
   }
 }
 
-/* Touch-friendly target sizes (minimum 44-48px) */
+/* Touch-friendly target sizes (minimum 44px).
+   Buttons and navigation links get the full size. Text links inside a
+   sentence or breadcrumb do NOT: forcing 44px there stretched line
+   spacing and pushed breadcrumb slashes out of line. They get an
+   invisible padding hit area instead (same tap size, no layout change). */
 @media (max-width: 768px) {
   button,
-  a,
   input[type="button"],
   input[type="submit"],
-  [role="button"] {
+  [role="button"],
+  header nav a,
+  footer a,
+  a.touch-target {
     min-height: 44px;
     min-width: 44px;
+  }
+  footer a,
+  header nav a {
+    display: inline-flex;
+    align-items: center;
+  }
+  [aria-label="Breadcrumb"] a,
+  p a,
+  li > a:not([class*="h-"]) {
+    padding-block: 12px;
+    margin-block: -12px;
   }
 }
 
@@ -338,3 +355,47 @@ video {
 @media (prefers-reduced-motion: reduce) {
   .btn-shine::after { display: none; }
 }
+
+/* ── Motion primitives (see src/components/motion) ─────────────── */
+
+/* Spotlight card: glow follows the pointer via --sx/--sy. */
+.spotlight-glow {
+  background: radial-gradient(320px circle at var(--sx, 50%) var(--sy, 50%), var(--spot, rgba(90, 143, 12, 0.14)), transparent 70%);
+}
+
+/* Marquee: the track slides by half the total width, which is one copy. */
+.marquee-track { animation: marquee-slide var(--marquee-duration, 40s) linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+@keyframes marquee-slide { to { transform: translateX(-100%); } }
+
+/* Border beam: a conic highlight revolving around the padding edge. */
+@property --beam-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+.border-beam {
+  padding: 1.5px;
+  background: conic-gradient(from var(--beam-angle), transparent 0 300deg, rgba(249, 115, 22, 0.95) 340deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: beam-spin 6s linear infinite;
+}
+@keyframes beam-spin { to { --beam-angle: 360deg; } }
+
+/* Long lists: skip rendering off-screen cards until they scroll near. */
+.cv-auto { content-visibility: auto; contain-intrinsic-size: auto 420px; }
+
+/* Hide scrollbars on horizontally scrolling rows (breadcrumbs, chips). */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee { overflow: visible; flex-wrap: wrap; mask-image: none; }
+  .marquee-track { animation: none; flex-wrap: wrap; }
+  .marquee-track[aria-hidden="true"] { display: none; }
+  .border-beam { display: none; }
+  .spotlight-glow { display: none; }
+}
+
+/* Page transition (src/app/(public)/template.tsx). Opacity only. */
+.page-in { animation: page-in 0.22s ease-out; }
+@keyframes page-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .page-in { animation: none; } }

@@ -316,7 +316,7 @@ export default function ContactPage() {
   return (
     <div className="pb-16 pt-[9.5rem] lg:pb-24 lg:pt-[11.5rem]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <nav aria-label="Breadcrumb" className="mb-8 flex items-center gap-2 text-sm text-gray-500">
+        <nav aria-label="Breadcrumb" className="no-scrollbar mb-8 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-sm text-gray-500">
           <Link href="/" className="transition-colors hover:text-emerald">
             Home
           </Link>

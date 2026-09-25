@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { Category, Product } from "@/types";
 import { ProductGrid } from "@/components/products/ProductGrid";
 import { ProductFilters } from "@/components/products/ProductFilters";
@@ -47,6 +47,9 @@ export function CategoryClient({
   const [selectedApplications, setSelectedApplications] = useState<string[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("popularity");
+  // Phones: the filter list is long, so it starts collapsed.
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount = selectedApplications.length + selectedIngredients.length;
 
   const allApplications = useMemo(() => {
     const apps = new Set<string>();
@@ -106,7 +109,7 @@ export function CategoryClient({
     <div className="pb-12 pt-[9.5rem] lg:pb-20 lg:pt-[11.5rem]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Breadcrumb */}
-        <nav className="mb-8 flex items-center gap-2 text-sm text-gray-600">
+        <nav aria-label="Breadcrumb" className="no-scrollbar mb-8 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-sm text-gray-600">
           <Link href="/" className="transition-colors hover:text-black">
             Home
           </Link>
@@ -146,6 +149,24 @@ export function CategoryClient({
 
         {/* Layout: Filters + Grid */}
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[240px_1fr]">
+          <div className="lg:hidden">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((o) => !o)}
+              aria-expanded={filtersOpen}
+              className="flex h-12 w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 shadow-sm"
+            >
+              <span className="flex items-center gap-2">
+                <SlidersHorizontal className="h-4 w-4 text-emerald" aria-hidden="true" />
+                Filters &amp; sort
+                {activeFilterCount > 0 && (
+                  <span className="rounded-full bg-emerald px-2 py-0.5 text-[11px] font-bold text-white">{activeFilterCount}</span>
+                )}
+              </span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${filtersOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+            </button>
+          </div>
+          <div className={`${filtersOpen ? "block" : "hidden"} lg:block`}>
           <ProductFilters
             applications={allApplications}
             activeIngredients={allIngredients}
@@ -156,6 +177,7 @@ export function CategoryClient({
             sortBy={sortBy}
             onSortChange={setSortBy}
           />
+          </div>
           <ProductGrid products={filteredProducts} highlightSlug={highlightSlug} />
         </div>
       </div>

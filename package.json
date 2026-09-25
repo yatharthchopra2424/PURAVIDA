@@ -22,6 +22,7 @@
     "leads:repair-products": "tsx scripts/leads/repair-products.ts",
     "leads:backfill-market": "tsx scripts/leads/backfill-market.ts",
     "leads:backfill-gaps": "tsx scripts/leads/backfill-gaps.ts",
+    "seo:indexnow": "tsx scripts/indexnow.ts",
     "leads:apply-raw": "tsx scripts/leads/apply-raw-enrichment.ts",
     "leads:verify-ingestion": "tsx scripts/leads/verify-ingestion.ts",
     "verify": "tsx scripts/verify-system.ts"

@@ -20,7 +20,7 @@ export function ProductCarousel({
   products: Product[];
 }) {
   const [activeCategory, setActiveCategory] = useState(
-    categories[0]?.slug || ""
+    categories.find((c) => c.slug === "nutraceuticals")?.slug ?? categories[0]?.slug ?? ""
   );
   const scrollRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((s) => s.addItem);

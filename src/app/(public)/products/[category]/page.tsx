@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { fitMetaDescription } from "@/lib/product-content";
 import { notFound } from "next/navigation";
 import {
   fetchCategories,
@@ -50,9 +51,11 @@ export async function generateMetadata({
     return { title: "Category not found", robots: { index: false, follow: true } };
   }
 
-  const description =
+  const description = fitMetaDescription(
     category.description ||
-    `Browse our range of ${category.name.toLowerCase()} — standardized, quality-tested botanical ingredients for bulk supply.`;
+      `Browse our range of ${category.name.toLowerCase()}: standardised botanical ingredients for bulk supply.`,
+    `Specifications, standardisation and test method on every product page. Bulk supply for India and export.`
+  );
 
   return {
     title: category.name,

@@ -8,7 +8,7 @@ import { ImageBand } from "@/components/shared/ImageBand";
 export const metadata: Metadata = {
   title: "Pura Vida Advantage",
   description:
-    "14+ years of experience in the herbal industry, supplying standardized botanical powders and extracts to buyers in India and abroad.",
+    "14+ years in the herbal industry: standardized botanical powders and extracts, sourced across India and supplied to manufacturers and brands at home and abroad.",
   alternates: { canonical: "/advantage" },
   openGraph: {
     type: "website",

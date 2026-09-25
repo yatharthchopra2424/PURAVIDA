@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Product } from "@/types";
 import { track } from "@/lib/track";
+import { useToastStore } from "@/stores/useToastStore";
 
 export type QuoteUnit = "kg" | "g" | "L" | "ml" | "MT" | "units";
 
@@ -54,6 +55,8 @@ export const useCartStore = create<CartState>()(
       addItem: (product, quantity, opts) => {
         const existing = get().items.find((i) => i.product.id === product.id);
         if (!existing) track("add_to_quote", { product: product.slug });
+        // When the drawer stays closed (adding from the quote form), confirm with a toast instead.
+        if (opts?.open === false) useToastStore.getState().push(existing ? `${product.name} is already in your quote` : `${product.name} added to your quote`);
         set({
           items: existing
             ? get().items

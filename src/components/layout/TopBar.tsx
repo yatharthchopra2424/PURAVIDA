@@ -37,14 +37,16 @@ export function TopBar() {
         <div className="flex items-center gap-4">
           <a
             href={`tel:${COMPANY.phone}`}
-            className="flex items-center gap-1.5 transition-colors hover:text-emerald-200"
+            aria-label={`Call ${COMPANY.phone}`}
+            className="flex h-11 w-11 items-center justify-center gap-1.5 transition-colors hover:text-emerald-200 sm:h-auto sm:w-auto sm:justify-start"
           >
             <Phone className="h-3 w-3" />
             <span className="hidden sm:inline">{COMPANY.phone}</span>
           </a>
           <a
             href={`mailto:${COMPANY.email}`}
-            className="flex items-center gap-1.5 transition-colors hover:text-emerald-200"
+            aria-label={`Email ${COMPANY.email}`}
+            className="flex h-11 w-11 items-center justify-center gap-1.5 transition-colors hover:text-emerald-200 sm:h-auto sm:w-auto sm:justify-start"
           >
             <Mail className="h-3 w-3" />
             <span className="hidden sm:inline">{COMPANY.email}</span>

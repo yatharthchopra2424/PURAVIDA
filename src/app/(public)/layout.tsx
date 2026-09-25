@@ -5,6 +5,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { CommandPalette } from "@/components/search/CommandPalette";
 import { QuoteDrawer } from "@/components/quote/QuoteDrawer";
 import { PageviewTracker } from "@/components/quote/PageviewTracker";
+import { Toaster } from "@/components/ui/Toaster";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
 import { JsonLd } from "@/components/shared/JsonLd";
 import {
@@ -62,6 +63,7 @@ export default function PublicLayout({
       <CommandPalette />
       <QuoteDrawer />
       <PageviewTracker />
+      <Toaster />
     </SmoothScrollProvider>
   );
 }

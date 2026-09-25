@@ -12,9 +12,9 @@ export const revalidate = 3600;
 const PATH = "/encapsulated-oleoresins";
 
 export const metadata: Metadata = {
-  title: "Encapsulated Oleoresins: Manufacturer & Supplier, India",
+  title: "Encapsulated Oleoresins: Supplier in India",
   description:
-    "Encapsulated (free-flowing powder) oleoresins from New Delhi: hing/asafoetida, black pepper, capsicum, ginger, turmeric, cumin, clove and more, for masala, seasoning and tea blends. Bulk supply for India and export.",
+    "Free-flowing encapsulated oleoresins from New Delhi: hing, black pepper, capsicum, ginger, turmeric and more, for masala, seasoning and tea blends. Bulk and export.",
   alternates: { canonical: PATH },
   openGraph: {
     title: "Encapsulated Oleoresins: Manufacturer & Supplier, India",

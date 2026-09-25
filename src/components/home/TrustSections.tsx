@@ -16,6 +16,8 @@ import {
   MapPin,
 } from "lucide-react";
 import { COMPANY } from "@/lib/constants";
+import { Marquee } from "@/components/motion/Marquee";
+import { BorderBeam } from "@/components/motion/BorderBeam";
 
 /**
  * Home-page trust sections, added after the Aug–Sep 2026 analytics showed
@@ -84,6 +86,32 @@ export function ProofBar({ productCount }: { productCount: number }) {
         ))}
       </div>
     </section>
+  );
+}
+
+// ── 1b · Credentials ticker ────────────────────────────────────────
+const TICKER = [
+  "FSSAI licensed",
+  "Halal India certified",
+  "GST registered",
+  "Udyam (MSME) registered",
+  `${COMPANY.experienceYears}+ years of experience`,
+  "India & export supply",
+  "Certificate of analysis on request",
+  "Made in India",
+];
+
+export function CredentialsTicker() {
+  return (
+    <div className="border-b border-emerald-100 bg-emerald-50/60 py-3.5" aria-label="Credentials">
+      <Marquee duration={45}>
+        {TICKER.map((t) => (
+          <span key={t} className="flex items-center gap-2 whitespace-nowrap text-sm font-semibold text-emerald-800">
+            <ShieldCheck className="h-4 w-4 text-emerald" aria-hidden="true" /> {t}
+          </span>
+        ))}
+      </Marquee>
+    </div>
   );
 }
 
@@ -258,6 +286,7 @@ export function QuoteBand({ productCount }: { productCount: number }) {
         className="relative mx-4 overflow-hidden rounded-3xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 p-10 text-center text-white shadow-2xl shadow-orange-500/20 sm:mx-6 lg:mx-auto lg:max-w-6xl lg:p-14"
       >
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:18px_18px]" />
+        <BorderBeam />
         <h2 className="relative font-heading text-3xl font-black tracking-tight sm:text-4xl">Need pricing for your next batch?</h2>
         <p className="relative mx-auto mt-3 max-w-2xl text-lg text-white/90">
           Tell us the products and quantities. You&apos;ll get price, MOQ and specifications within one business day, for

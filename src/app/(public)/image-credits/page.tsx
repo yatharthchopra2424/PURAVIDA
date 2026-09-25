@@ -6,7 +6,7 @@ import { PageHero } from "@/components/layout/PageHero";
 export const metadata: Metadata = {
   title: "Image Credits",
   description:
-    "Attribution for photographs sourced from Wikimedia Commons used across the PuraVida Natural catalog.",
+    "Credits and licences for the photographs and illustrations used on the PuraVida Natural website, with links to the original photographers and image libraries.",
   alternates: { canonical: "/image-credits" },
   robots: { index: false, follow: true },
 };

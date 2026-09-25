@@ -20,7 +20,7 @@ import { COMPANY } from "@/lib/constants";
 export const metadata: Metadata = {
   title: "Facility & Certification",
   description:
-    "FSSAI licensed, Halal India certified supply with batch-wise laboratory testing and certificates of analysis on request.",
+    "Our registrations and quality process: FSSAI licence, Halal India certification, GST and Udyam numbers you can verify, and certificates of analysis on request.",
   alternates: { canonical: "/facility" },
   openGraph: {
     type: "website",

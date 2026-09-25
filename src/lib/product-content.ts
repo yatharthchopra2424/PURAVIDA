@@ -107,8 +107,26 @@ export function buildFaq(p: Product): FaqItem[] {
   return items;
 }
 
-/** Title with an export angle; the layout appends " | PuraVida Natural". */
+/**
+ * Meta description sized for search results (Bing flags anything short,
+ * Google truncates past ~160). Pads a short description with a factual
+ * closing line and trims long ones at a word boundary.
+ */
+export function fitMetaDescription(text: string, pad = "Bulk supply and export from New Delhi. Request a quote for price, MOQ and specifications."): string {
+  const MAX = 158;
+  const MIN = 140;
+  let out = text.replace(/\s+/g, " ").trim();
+  if (out.length < MIN) out = `${out.replace(/[.\s]*$/, "")}. ${pad}`;
+  if (out.length <= MAX) return out;
+  const cut = out.slice(0, MAX - 1);
+  const at = cut.lastIndexOf(" ");
+  return `${cut.slice(0, at > 100 ? at : MAX - 1).replace(/[,;:\s]+$/, "")}…`;
+}
+
+/** Title with an export angle, used as an absolute title (no brand suffix) so it fits in search results. */
 export function buildTitle(p: Product): string {
   const t = `${p.name}: Bulk Supplier & Exporter, India`;
-  return t.length <= 52 ? t : `${p.name}: Bulk Supplier, India`;
+  if (t.length <= 58) return t;
+  const short = `${p.name}: Bulk Supplier, India`;
+  return short.length <= 58 ? short : p.name;
 }

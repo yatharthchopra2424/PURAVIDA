@@ -15,6 +15,8 @@ export interface GuideSection {
 export interface Guide {
   slug: string;
   title: string;
+  /** Short title for the browser tab and search results (about 45 characters). */
+  metaTitle: string;
   /** 40–60 word direct answer, shown first and used as the meta description. */
   answer: string;
   published: string;
@@ -25,6 +27,7 @@ export interface Guide {
 export const GUIDES: Guide[] = [
   {
     slug: "ashwagandha-extract-grades-explained",
+    metaTitle: "Ashwagandha Extract Grades Explained",
     title: "Ashwagandha extract grades explained: withanolide percentages and what to ask for",
     answer:
       "Ashwagandha extract is sold by withanolide content, commonly 1.5%, 2.5%, 5% or 10%. A higher percentage means more of the marker compound per gram, not automatically a better product. Ask which plant part was used, which test method measured the withanolides, and for the batch certificate of analysis.",
@@ -71,6 +74,7 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "hplc-vs-uv-vs-gravimetric-coa",
+    metaTitle: "HPLC vs UV vs Gravimetric: Reading a COA",
     title: "HPLC, UV and gravimetric: what your certificate of analysis is really telling you",
     answer:
       "HPLC separates and measures individual compounds, UV measures the total of everything that absorbs light at a wavelength, and gravimetric methods weigh an extracted fraction. The same herbal extract can show different percentages by each method, so always compare grades measured by the same method.",
@@ -113,6 +117,7 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "importing-herbal-extracts-from-india-documents",
+    metaTitle: "Importing Herbal Extracts from India: Documents",
     title: "Importing herbal extracts from India: the documents checklist",
     answer:
       "A typical shipment of herbal extracts from India travels with a commercial invoice, packing list, certificate of analysis, certificate of origin and a safety data sheet, plus Halal or other certificates if you need them. Your own country's import rules decide what else is required, so confirm with your customs broker before ordering.",
@@ -161,6 +166,7 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "oleoresin-vs-essential-oil-vs-extract",
+    metaTitle: "Oleoresin vs Essential Oil vs Extract",
     title: "Oleoresin vs essential oil vs herbal extract: what is the difference?",
     answer:
       "An essential oil is the steam-distilled volatile fraction of a plant. An oleoresin is a solvent extract holding both the volatile oil and the resin, so it is stronger and closer to the whole spice. A herbal extract is a concentrate standardised to a marker compound, usually sold as a powder.",
@@ -201,6 +207,7 @@ export const GUIDES: Guide[] = [
   },
   {
     slug: "standardised-vs-full-spectrum-herbal-extract",
+    metaTitle: "Standardised vs Full-Spectrum Herbal Extract",
     title: "Standardised vs full-spectrum herbal extract: which one do you need?",
     answer:
       "A standardised extract is adjusted so a named marker compound reaches a fixed percentage in every batch. A full-spectrum extract keeps the plant's natural mix of compounds without targeting one. Choose standardised when you need a repeatable dose and a specification; choose full-spectrum when the whole-plant profile is the point.",

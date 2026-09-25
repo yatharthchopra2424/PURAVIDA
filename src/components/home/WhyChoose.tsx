@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { Award, Leaf, FlaskConical, Globe, ShieldCheck, Headset } from "lucide-react";
 import { whyChooseFeatures } from "@/data/navigation";
 import { MagneticWrapper } from "@/components/ui/MagneticWrapper";
+import { SpotlightCard } from "@/components/motion/SpotlightCard";
 
 const iconMap: Record<string, React.ReactNode> = {
   award: <Award className="h-6 w-6" />,
@@ -77,7 +78,8 @@ export function WhyChoose() {
                 strength={0.15}
                 className="w-full max-w-[350px] md:max-w-none"
               >
-                <div
+                <SpotlightCard
+                  glow="rgba(207, 161, 83, 0.16)"
                   className="feature-card group cursor-pointer rounded-[25px] border-2 bg-white p-8 opacity-0 transition-all duration-300 hover:-translate-y-2 h-full"
                   style={{ 
                     willChange: "transform, opacity",
@@ -94,7 +96,7 @@ export function WhyChoose() {
                   <p className="text-sm leading-relaxed text-center" style={{ color: '#555555' }}>
                     {feature.description}
                   </p>
-                </div>
+                </SpotlightCard>
               </MagneticWrapper>
             ))}
           </div>

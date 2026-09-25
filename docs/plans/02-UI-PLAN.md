@@ -1,5 +1,27 @@
 # Plan 2: UI and animation overhaul
 
+## Status (25 Sep 2026): ✅ implemented
+
+| Area | State |
+|---|---|
+| Defects 1–12 in section A | ✅ all fixed or shown not to be bugs |
+| Button system (shine sweep, press, loading state that keeps its width, no text wrap, 44px touch) | ✅ `src/components/ui/Button.tsx` |
+| Motion library (no new dependencies): SpotlightCard, BlurFade, Marquee, BorderBeam | ✅ `src/components/motion/` |
+| Toast ("added to quote" when the drawer stays closed) | ✅ `useToastStore` + `Toaster` |
+| Page transition (CSS fade, works without JavaScript) | ✅ `(public)/template.tsx` |
+| Credentials ticker on home (marquee) | ✅ |
+| Number counters (proof bar) | ✅ |
+| Spotlight glow on product cards and the "Why choose" cards | ✅ |
+| Border beam on the home quote band | ✅ |
+| Product cards: placeholder art for the 56 products with no photo, lighter rendering for 140+ card lists | ✅ |
+| Sticky "Request quote" bar on phone product pages | ✅ |
+| Category page: collapsible filters on phones, 2-column grid | ✅ |
+| Useful 404 page (categories, guides, quote) | ✅ |
+| Home shows Nutraceuticals first (most-visited category in the analytics) | ✅ |
+| Not done on purpose | Bento grid and animated tabs: the existing "Why choose" grid and the product tabs already work, and replacing them risks regressions for little gain. Compare-3-products: needs real spec data first. |
+
+**Rules kept:** animate only opacity and transform, once per element, respect `prefers-reduced-motion`, and never hide server-rendered text behind a JavaScript fade (a fade that starts at opacity 0 would leave the page blank without JavaScript, so the page transition is pure CSS).
+
 Date: 25 Sep 2026 · Method: full-page screenshots of 13 pages at 1440 px (desktop) and 390 px (phone), headless Chrome against the live site, plus a script that measured every button, tap target and overflow. The screenshots are in the session scratchpad; they are re-taken after every phase for before/after comparison.
 
 ---
@@ -14,12 +36,12 @@ Date: 25 Sep 2026 · Method: full-page screenshots of 13 pages at 1440 px (deskt
 | 4 | ~~Related products show blank grey boxes~~ | product pages | **Not a bug:** images load with real scrolling; the blank boxes were an artifact of my screenshot script (Lenis smooth-scroll ignores programmatic scrolling) | No change; the screenshot script now uses real wheel scrolling |
 | 5 | Footer logo is a blank white square | every page | 36×36 white box | ✅ FIXED: white knock-out wordmark |
 | 6 | "Get Quote" gives no feedback | cards | click → only a tiny badge | ✅ FIXED: slide-over quote drawer and animated header badge (Plan 1 §1.1) |
-| 7 | Category page 63,000 px tall on a phone | `/products/herbal-extracts` (142 items) | – | Filter chips (by application or compound), search in category, "Load 24 more" |
+| 7 | Category page 63,000 px tall on a phone | `/products/herbal-extracts` (142 items) | – | ✅ FIXED: 2-column compact cards on phones, filters collapse behind a "Filters & sort" button, off-screen cards skipped (`content-visibility`). Phone page height 63,260 → 32,264 px |
 | 8 | ~~`/about` takes ~31 s to settle~~ | `/about` | re-tested: page load 0.7 s, no hanging requests | **Not a bug:** a one-off serverless cold start during the first audit |
-| 9 | Two `<h1>` on home; none on `/contact` | – | – | ✅ FIXED on /contact (one H1, own title and description); home still to do |
-| 10 | Breadcrumb wraps mid-trail on a phone | product pages | – | Single line with horizontal scroll and ellipsis on the middle crumbs |
-| 11 | Tap targets under 32 px | 12–26 per page | – | Minimum 44×44 px on touch |
-| 12 | "Details coming soon." shown to buyers | 243 products | – | Plan 3 content; meanwhile show a spec table built from the known fields |
+| 9 | Two `<h1>` on home; none on `/contact` | – | – | ✅ FIXED: one H1 on every page (home hero was one H1 per line) |
+| 10 | Breadcrumb wraps mid-trail on a phone | product pages | – | ✅ FIXED: one-line breadcrumb that scrolls sideways; also fixed the global 44px link rule that pushed slashes out of line |
+| 11 | Tap targets under 32 px | 12–26 per page | – | ✅ FIXED: buttons and nav links keep 44px; text links get a padding hit area; top-bar icons enlarged |
+| 12 | "Details coming soon." shown to buyers | 243 products | – | ✅ FIXED: spec table + FAQ on every product page (Plan 3) |
 
 ---
 

@@ -14,7 +14,7 @@ import {
 } from "@/lib/structured-data";
 import { ProductDetailClient } from "./ProductDetailClient";
 import { ProductInsights } from "@/components/products/ProductInsights";
-import { buildFaq, buildTitle } from "@/lib/product-content";
+import { buildFaq, buildTitle, fitMetaDescription } from "@/lib/product-content";
 
 export const revalidate = 3600;
 
@@ -67,12 +67,12 @@ export async function generateMetadata({
     .filter(Boolean)
     .join(" · ");
 
-  const description = (
+  const description = fitMetaDescription(
     specs ? `${specs}. ${product.description}` : product.description
-  ).slice(0, 155);
+  );
 
   return {
-    title: buildTitle(product),
+    title: { absolute: buildTitle(product) },
     description,
     keywords: [
       product.name,
